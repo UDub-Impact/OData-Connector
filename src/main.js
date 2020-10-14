@@ -17,7 +17,7 @@
  * Google Data Studio documentation for getAuthType:
  * https://developers.google.com/datastudio/connector/reference#getauthtype
  * 
- * @return {object} An object that contains the AuthType that will 
+ * @returns {object} An object that contains the AuthType that will 
  * be used by the connector
  */
 function getAuthType() {
@@ -28,6 +28,29 @@ function getAuthType() {
         .build();
 }
 
+/**
+ * Checks if the 3rd-party service credentials are valid.
+ * In this case this method will check if the user name +
+ * password user entered are valid.
+ * 
+ * If this method returns true it is expected that calls to getData 
+ * and getSchema will be authorized. 
+ * If this method returns false the user will likely be notified that auth has expired 
+ * and they will be asked to reauthorize.
+ * 
+ * @returns {boolean} true if 3rd-party service credentials are valid, 
+ * false otherwise. 
+ */
+function isAuthValid() {
+    
+}
+
+/**
+ * This method clears user credentials for the third-party service.
+ */
+function resetAuth() {
+
+}
 
 /**
  * 
