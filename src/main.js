@@ -18,7 +18,7 @@
  * https://developers.google.com/datastudio/connector/reference#getauthtype
  * 
  * @returns {object} An object that contains the AuthType that will 
- * be used by the connector
+ *                   be used by the connector
  */
 function getAuthType() {
     var cc = DataStudioApp.createCommunityConnector();
@@ -39,7 +39,7 @@ function getAuthType() {
  * and they will be asked to reauthorize.
  * 
  * @returns {boolean} true if 3rd-party service credentials are valid, 
- * false otherwise. 
+ *                    false otherwise. 
  */
 function isAuthValid() {
     
