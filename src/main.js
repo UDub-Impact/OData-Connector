@@ -9,10 +9,23 @@
  */
 
 /**
+ * This method returns the authentication method we are going to use
+ * for the 3rd-party service. At this time we will use user name and
+ * password to authenticate the user. Later we might switch to 
+ * OAuth 2 method, which is more complex.
  * 
+ * Google Data Studio documentation for getAuthType:
+ * https://developers.google.com/datastudio/connector/reference#getauthtype
+ * 
+ * @return {object} An object that contains the AuthType that will 
+ * be used by the connector
  */
 function getAuthType() {
-
+    var cc = DataStudioApp.createCommunityConnector();
+    return cc.newAuthTypeResponse()
+        .setAuthType(cc.AuthType.USER_PASS)
+        .setHelpUrl('https://www.example.org/connector-auth-help')
+        .build();
 }
 
 
