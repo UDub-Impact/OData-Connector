@@ -25,7 +25,8 @@ var cc = DataStudioApp.createCommunityConnector();
  */
 function getAuthType() {
     return cc.newAuthTypeResponse()
-        .setAuthType(cc.AuthType.USER_PASS)
+        .setAuthType(cc.AuthType.USER_PASS) // indicate we want to use user + 
+                                            // password for authentication
         .setHelpUrl('https://www.example.org/connector-auth-help')
         .build();
 }
@@ -40,6 +41,8 @@ function getAuthType() {
  * If this method returns false the user will likely be notified that auth has expired 
  * and they will be asked to reauthorize.
  * 
+ * This method is required by user password authentication
+ * 
  * @returns {boolean} true if 3rd-party service credentials are valid, 
  *                    false otherwise. 
  */
@@ -49,6 +52,8 @@ function isAuthValid() {
 
 /**
  * This method clears user credentials for the third-party service.
+ * 
+ * This method is required by user password authentication
  */
 function resetAuth() {
 
