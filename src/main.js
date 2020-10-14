@@ -8,6 +8,9 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+ // global connector variable that each method can access.
+var cc = DataStudioApp.createCommunityConnector();
+
 /**
  * This method returns the authentication method we are going to use
  * for the 3rd-party service. At this time we will use user name and
@@ -21,7 +24,6 @@
  *                   be used by the connector
  */
 function getAuthType() {
-    var cc = DataStudioApp.createCommunityConnector();
     return cc.newAuthTypeResponse()
         .setAuthType(cc.AuthType.USER_PASS)
         .setHelpUrl('https://www.example.org/connector-auth-help')
