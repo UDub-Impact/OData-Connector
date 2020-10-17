@@ -36,10 +36,11 @@ function getAuthType() {
  * In this case this method will check if the user name +
  * password user entered are valid.
  * 
- * If this method returns true it is expected that calls to getData 
- * and getSchema will be authorized. 
- * If this method returns false the user will likely be notified that auth has expired 
- * and they will be asked to reauthorize.
+ * API reference: https://developers.google.com/datastudio/connector/reference#required_userpass_key_functions
+ * 
+ * If this method returns true then we call getConfig function and go to the next step
+ * If this method returns false the user will be prompted for information to 
+ * authenticate/re-authenticate. (In this case via username and password)
  * 
  * This method is required by user password authentication
  * 
@@ -47,8 +48,79 @@ function getAuthType() {
  *                    false otherwise. 
  */
 function isAuthValid() {
+    const properties = PropertiesService.getUserProperties();
+    var userName = properties.getProperty('dscc.username');
+    var userPassword = properties.getProperty('dscc.password');
+  
+    // Logger.log(userName); // for debugging messages.
+    // Logger.log(userPassword);
     
+    // return true if userName and userPassword are not null and
+    // the combination is valid.
+    return userName && userPassword && validateCredentials(userName, userPassword);
 }
+
+/**
+ * given request object which has the user name and password,
+ * store them into properties if they are valid, and return
+ * some error code as object if credential is not valid.
+ * 
+ * @param {object} request A JavaScript object containing the data request parameters
+ * @returns {object} A JavaScript object that contains an error code indicating if the credentials were able to be set successfully.
+ * "errorCode": string("NONE" | "INVALID_CREDENTIALS")
+ */
+function setCredentials(request) {
+    var isCredentialsValid = validateCredentials(request.userPass.username, request.userPass.password);
+    
+    if (!isCredentialsValid) {
+      return {
+        errorCode: "INVALID_CREDENTIALS"
+      };
+    } else {
+      storeUsernameAndPassword(request.userPass.username, request.userPass.password);
+      return {
+        errorCode: "NONE"
+      };
+    }
+  }
+
+/**
+ * given the username and password,
+ * return true if this is a valid combination of username and password,
+ * else return false.
+ * 
+ * @param {string} username Example: "hughsun@uw.edu" 
+ * @param {string} password Example: "123"
+ * @returns {boolean} whether the username + password are correct
+ */
+function validateCredentials(username, password) {
+  
+    var rawResponse = UrlFetchApp.fetch('https://sandbox.central.getodk.org/v1/projects/124/forms/', {
+      method: 'GET',
+      headers: {
+        'Authorization': 'Basic ' + Utilities.base64Encode(username + ':' + password)
+      },
+      muteHttpExceptions: true
+    });
+    // if response code == 200 means verification of username and password
+    // succeeded.
+    return rawResponse.getResponseCode() === 200;
+  }
+
+/**
+ * This method stores the username and password into the global variable
+ * properties which then can be accessed later by other methods through
+ * properties object
+ * 
+ * @param {string} username Example: "hughsun@uw.edu" 
+ * @param {string} password Example: "123"
+ */
+function storeUsernameAndPassword(username, password) {
+    PropertiesService
+      .getUserProperties()
+      .setProperty('dscc.username', username)
+      .setProperty('dscc.password', password); // dscc stands for data studio community connector
+  };
 
 /**
  * This method clears user credentials for the third-party service.
@@ -56,14 +128,24 @@ function isAuthValid() {
  * This method is required by user password authentication
  */
 function resetAuth() {
-
+    // PropertiesService is a global variable that keeps the information of
+    // the user. In this case we need to remove user name and password
+    // from that global variable.
+    var properties = PropertiesService.getUserProperties();
+    properties.deleteProperty('dscc.username');
+    properties.deleteProperty('dscc.password');
 }
 
 /**
- * 
+ * API reference: https://developers.google.com/datastudio/connector/reference#getconfi
  */
 function getConfig(request) {
-
+    var config = cc.getConfig();
+  
+    // this config objected needs to be configured to have some texts or
+    // prompts for user to enter.
+  
+    return config.build();
 }
 
 /**
