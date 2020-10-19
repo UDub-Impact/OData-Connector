@@ -197,21 +197,22 @@ function getFields(request) {
     var fields = cc.getFields();
     var types = cc.FieldType;
     var aggregations = cc.AggregationType;
+    
     fields.newDimension()
-        .setId('student_name')
-        .setType(types.TEXT);
+    .setId('student_name')
+    .setType(types.TEXT);
 
     fields.newMetric()
-        .setId('student_age')
-        .setType(types.NUMBER)
+    .setId('student_age')
+    .setType(types.NUMBER);
 
     fields.newMetric()
-        .setId('student_school_year')
-        .setType(types.TEXT)
+    .setId('student_school_year')
+    .setType(types.TEXT);
 
     fields.newDimension()
-        .setId('submissionDate')
-        .setType(types.YEAR_MONTH_DAY);
+    .setId('submissionDate')
+    .setType(types.YEAR_MONTH_DAY);
 
     return fields;
 }
