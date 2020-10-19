@@ -137,14 +137,58 @@ function resetAuth() {
 }
 
 /**
- * API reference: https://developers.google.com/datastudio/connector/reference#getconfi
+ * This method returns the user configurable options for the connector.
+ * 
+ * Google Data Studio documentation for getAuthType:
+ * https://developers.google.com/datastudio/connector/reference#getconfig
+ * 
+ * @param {Object} request A JavaScript object containing the config request parameters.
+ * @return {object} A JavaScript object representing the config for the given request.
  */
 function getConfig(request) {
     var config = cc.getConfig();
   
-    // this config objected needs to be configured to have some texts or
-    // prompts for user to enter.
+    config.newInfo()
+    .setId('Request Data')
+    .setText('Enter details for the Data you would like to access.');
   
+    config.newTextInput()
+    .setId('projectId')
+    .setName('Enter a Project Id')
+    .setHelpText('e.g. 124');
+    
+    config.newTextInput()
+    .setId('xmlFormId')
+    .setName('Enter a Form Id')
+    .setHelpText('e.g. odata connector scheme');
+
+    config.newTextInput()
+    .setId('table')
+    .setName('Enter a Table Name')
+    .setHelpText('e.g. Submissions');
+
+    config.newTextInput()
+    .setId('$skip')
+    .setName('Number of rows to skip (Optional)')
+    .setHelpText('e.g. 10');
+
+    config.newTextInput()
+    .setId('$top')
+    .setName('Number of rows to display from the top (Optional)')
+    .setHelpText('e.g. 5');
+
+    config.newSelectSingle()
+    .setId('$count')
+    .setName('Display Total Number of Rows')
+    .addOption(config.newOptionBuilder().setLabel('True').setValue('true'))
+    .addOption(config.newOptionBuilder().setLabel('False').setValue('false'));
+
+    config.newSelectSingle()
+    .setId('$wkt')
+    .setName('Display GeoJSON as Well-Known Text')
+    .addOption(config.newOptionBuilder().setLabel('True').setValue('true'))
+    .addOption(config.newOptionBuilder().setLabel('False').setValue('false'));
+ 
     return config.build();
 }
 
@@ -159,5 +203,5 @@ function getSchema(request) {
  * 
  */
 function getData(request) {
-
+  
 }
