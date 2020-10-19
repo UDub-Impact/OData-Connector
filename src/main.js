@@ -200,15 +200,19 @@ function getFields(request) {
     fields.newDimension()
         .setId('student_name')
         .setType(types.TEXT);
+
     fields.newMetric()
         .setId('student_age')
         .setType(types.NUMBER)
+
     fields.newMetric()
         .setId('student_school_year')
         .setType(types.TEXT)
+
     fields.newDimension()
         .setId('submissionDate')
         .setType(types.YEAR_MONTH_DAY);
+
     return fields;
 }
 
@@ -220,9 +224,58 @@ function getSchema(request) {
     return { schema: fields };
 }
 
+function responseToRows(requestedFields, response) {
+  // Transform parsed data and filter for requested fields
+  return response.map(function(submissions) {
+    var row = [];
+    requestedFields.asArray().forEach(function (field) {
+      switch (field.getId()) {
+        case 'student_name':
+          return row.push(submissions.student_name);
+        case 'student_age':
+          return row.push(submissions.studen_age);
+        case 'student_school_year':
+          return row.push(submissions.student_school_year);
+        case 'submissionDate':
+          return row.push(submissions.__system.submissionDate)
+        default:
+          return row.push('');
+      }
+    });
+    return { values: row };
+  });
+}
+
 /**
  *
  */
 function getData(request) {
+
+  var requestedFieldIds = request.fields.map(function(field) {
+    return field.name;
+  });
+  var requestedFields = getFields().forIds(requestedFieldIds);
+
+  var url = [
+    'https://sandbox.central.getodk.org/v1/projects/',
+    request.configParams.projectId,
+    '/forms/',
+    request.configParams.xmlFormId,
+    '.svc/',
+    request.configParams.table
+  ];
+
+  var options = {
+    'contentType': 'application/json'
+  }
+
+  var response = UrlFetchApp.fetch(url.join(''), options);
+  var parsedResponse = JSON.parse(response).value[0];
+  var rows = responseToRows(requestedFields, parsedResponse);
+
+  return {
+    schema: requestedFields.build(),
+    rows: rows
+  };
 
 }
