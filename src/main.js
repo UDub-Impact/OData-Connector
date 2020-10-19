@@ -14,18 +14,18 @@ var cc = DataStudioApp.createCommunityConnector();
 /**
  * This method returns the authentication method we are going to use
  * for the 3rd-party service. At this time we will use user name and
- * password to authenticate the user. Later we might switch to 
+ * password to authenticate the user. Later we might switch to
  * OAuth 2 method, which is more complex.
- * 
+ *
  * Google Data Studio documentation for getAuthType:
  * https://developers.google.com/datastudio/connector/reference#getauthtype
- * 
- * @returns {object} An object that contains the AuthType that will 
+ *
+ * @returns {object} An object that contains the AuthType that will
  *                   be used by the connector
  */
 function getAuthType() {
     return cc.newAuthTypeResponse()
-        .setAuthType(cc.AuthType.USER_PASS) // indicate we want to use user + 
+        .setAuthType(cc.AuthType.USER_PASS) // indicate we want to use user +
                                             // password for authentication
         .setHelpUrl('https://www.example.org/connector-auth-help')
         .build();
@@ -35,26 +35,26 @@ function getAuthType() {
  * Checks if the 3rd-party service credentials are valid.
  * In this case this method will check if the user name +
  * password user entered are valid.
- * 
+ *
  * API reference: https://developers.google.com/datastudio/connector/reference#required_userpass_key_functions
- * 
+ *
  * If this method returns true then we call getConfig function and go to the next step
- * If this method returns false the user will be prompted for information to 
+ * If this method returns false the user will be prompted for information to
  * authenticate/re-authenticate. (In this case via username and password)
- * 
+ *
  * This method is required by user password authentication
- * 
- * @returns {boolean} true if 3rd-party service credentials are valid, 
- *                    false otherwise. 
+ *
+ * @returns {boolean} true if 3rd-party service credentials are valid,
+ *                    false otherwise.
  */
 function isAuthValid() {
     const properties = PropertiesService.getUserProperties();
     var userName = properties.getProperty('dscc.username');
     var userPassword = properties.getProperty('dscc.password');
-  
+
     // Logger.log(userName); // for debugging messages.
     // Logger.log(userPassword);
-    
+
     // return true if userName and userPassword are not null and
     // the combination is valid.
     return userName && userPassword && validateCredentials(userName, userPassword);
@@ -64,14 +64,14 @@ function isAuthValid() {
  * given request object which has the user name and password,
  * store them into properties if they are valid, and return
  * some error code as object if credential is not valid.
- * 
+ *
  * @param {object} request A JavaScript object containing the data request parameters
  * @returns {object} A JavaScript object that contains an error code indicating if the credentials were able to be set successfully.
  * "errorCode": string("NONE" | "INVALID_CREDENTIALS")
  */
 function setCredentials(request) {
     var isCredentialsValid = validateCredentials(request.userPass.username, request.userPass.password);
-    
+
     if (!isCredentialsValid) {
       return {
         errorCode: "INVALID_CREDENTIALS"
@@ -88,13 +88,13 @@ function setCredentials(request) {
  * given the username and password,
  * return true if this is a valid combination of username and password,
  * else return false.
- * 
- * @param {string} username Example: "hughsun@uw.edu" 
+ *
+ * @param {string} username Example: "hughsun@uw.edu"
  * @param {string} password Example: "123"
  * @returns {boolean} whether the username + password are correct
  */
 function validateCredentials(username, password) {
-  
+
     var rawResponse = UrlFetchApp.fetch('https://sandbox.central.getodk.org/v1/projects/124/forms/', {
       method: 'GET',
       headers: {
@@ -111,8 +111,8 @@ function validateCredentials(username, password) {
  * This method stores the username and password into the global variable
  * properties which then can be accessed later by other methods through
  * properties object
- * 
- * @param {string} username Example: "hughsun@uw.edu" 
+ *
+ * @param {string} username Example: "hughsun@uw.edu"
  * @param {string} password Example: "123"
  */
 function storeUsernameAndPassword(username, password) {
@@ -124,7 +124,7 @@ function storeUsernameAndPassword(username, password) {
 
 /**
  * This method clears user credentials for the third-party service.
- * 
+ *
  * This method is required by user password authentication
  */
 function resetAuth() {
@@ -138,25 +138,25 @@ function resetAuth() {
 
 /**
  * This method returns the user configurable options for the connector.
- * 
+ *
  * Google Data Studio documentation for getAuthType:
  * https://developers.google.com/datastudio/connector/reference#getconfig
- * 
+ *
  * @param {Object} request A JavaScript object containing the config request parameters.
  * @return {object} A JavaScript object representing the config for the given request.
  */
 function getConfig(request) {
     var config = cc.getConfig();
-  
+
     config.newInfo()
     .setId('Request Data')
     .setText('Enter details for the Data you would like to access.');
-  
+
     config.newTextInput()
     .setId('projectId')
     .setName('Enter a Project Id')
     .setHelpText('e.g. 124');
-    
+
     config.newTextInput()
     .setId('xmlFormId')
     .setName('Enter a Form Id')
@@ -188,20 +188,41 @@ function getConfig(request) {
     .setName('Display GeoJSON as Well-Known Text')
     .addOption(config.newOptionBuilder().setLabel('True').setValue('true'))
     .addOption(config.newOptionBuilder().setLabel('False').setValue('false'));
- 
+
     return config.build();
 }
 
-/**
- * 
- */
-function getSchema(request) {
-
+function getFields(request) {
+    var cc = DataStudioApp.createCommunityConnector();
+    var fields = cc.getFields();
+    var types = cc.FieldType;
+    var aggregations = cc.AggregationType;
+    fields.newDimension()
+        .setId('student_name')
+        .setType(types.TEXT);
+    fields.newMetric()
+        .setId('student_age')
+        .setType(types.NUMBER)
+    fields.newMetric()
+        .setId('student_school_year')
+        .setType(types.TEXT)
+    fields.newDimension()
+        .setId('submissionDate')
+        .setType(types.YEAR_MONTH_DAY);
+    return fields;
 }
 
 /**
- * 
+ *
+ */
+function getSchema(request) {
+    var fields = getFields(request).build();
+    return { schema: fields };
+}
+
+/**
+ *
  */
 function getData(request) {
-  
+
 }
