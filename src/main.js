@@ -225,8 +225,14 @@ function getSchema(request) {
     return { schema: fields };
 }
 
+/**
+ * This method transforms parsed data and filters for requested fields.
+ * 
+ * @param {Object} requestedFields A JavaScript object that contains fields requested by the User.
+ * @param {JSON} response JSON that contains the response from the ODK API.
+ * @returns {Object} A JavaScript object that contains the rows of a table.
+ */
 function responseToRows(requestedFields, response) {
-  // Transform parsed data and filter for requested fields
   return response.map(function(submissions) {
     var row = [];
     requestedFields.asArray().forEach(function (field) {
@@ -234,7 +240,7 @@ function responseToRows(requestedFields, response) {
         case 'student_name':
           return row.push(submissions.student_name);
         case 'student_age':
-          return row.push(submissions.studen_age);
+          return row.push(submissions.student_age);
         case 'student_school_year':
           return row.push(submissions.student_school_year);
         case 'submissionDate':
@@ -248,9 +254,17 @@ function responseToRows(requestedFields, response) {
 }
 
 /**
- *
+ * This method returns the tabular data for the given request.
+ * 
+ * Google Data Studio documentation for getData:
+ * https://developers.google.com/datastudio/connector/reference#getdata
+ * 
+ * @param {Object} request A JavaScript object containing the data request parameters.
+ * @return {Object} A JavaScript object that contains the schema and data for the given request.
  */
 function getData(request) {
+
+  var user = PropertiesService.getUserProperties();
 
   var requestedFieldIds = request.fields.map(function(field) {
     return field.name;
@@ -266,17 +280,35 @@ function getData(request) {
     request.configParams.table
   ];
 
-  var options = {
-    'contentType': 'application/json'
-  }
-
-  var response = UrlFetchApp.fetch(url.join(''), options);
-  var parsedResponse = JSON.parse(response).value[0];
+  var response = UrlFetchApp.fetch(url.join(''), {
+      method: 'GET',
+      headers: {
+        'contentType' : 'application/json',
+        'Authorization': 'Basic ' + Utilities.base64Encode(user.getProperty('dscc.username') + ':' + user.getProperty('dscc.password'))
+      },
+      muteHttpExceptions: true
+  });
+  
+  var parsedResponse = JSON.parse(response).value;
   var rows = responseToRows(requestedFields, parsedResponse);
-
+  
   return {
     schema: requestedFields.build(),
     rows: rows
   };
 
+}
+
+/**
+ * This method checks if the user is an admin of the connector.
+ * This function is used to enable/disable debug features.
+ * 
+ * Google Data Studio documentation for getData:
+ * https://developers.google.com/datastudio/connector/reference#isadminuser
+ * 
+ * @return {boolean} Return true if the user is an admin of the connector.
+ * If the function is omitted or returns false, then the user will not be considered an admin.
+ */
+function isAdminUser() {
+  return true;
 }
