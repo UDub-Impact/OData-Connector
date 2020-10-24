@@ -114,6 +114,51 @@ function validateCredentials(username, password, path) {
   }
 
 /**
+ * given username, password, and a URL base path, this function returns
+ * the authorization token as a string, if the username and password are
+ * valid, else function returns null to indicate authentication failed.
+ * Notice that the following API requests need to put this token in the headers
+ * in order to authenticate.
+ * 
+ * @param {string} username Example: "udubimpact@gmail.com"
+ * @param {string} password Example: "impact++2020"
+ * @param {string} path Example: "https://sandbox.central.getodk.org/v1"
+ * @returns {string} returns the token as a string if username + password are valid, else return null. 
+ */
+function getToken(username, password, path) {
+  var bodyOfRequest = {
+    'email': username,
+    'password': password
+  };
+  var parametersOfRequest = {
+    'method' : 'post',
+    'contentType': 'application/json',
+    // Convert the JavaScript object to a JSON string.
+    // payload represents the body of the request.
+    'payload' : JSON.stringify(bodyOfRequest),
+    'muteHttpExceptions': true
+  };
+  // Example path: https://sandbox.central.getodk.org/v1
+  // we should actually send request to https://sandbox.central.getodk.org/v1/sessions
+  // to validate user credential.
+  var rawResponse = UrlFetchApp.fetch(path.concat('/sessions'), parametersOfRequest);
+  
+  if(rawResponse.getResponseCode() !== 200) {
+    // if response code != 200 means verification of username and password
+    // failed. return null in this case.
+    return null;
+  } else {
+    // if we are here means verification of username + password is successful
+    // return the token contained in the response body.
+    var responseBody = rawResponse.getContentText();
+    // responseBody is a string, need to make it into a json so we can get the token
+    var jsonOfResponse = JSON.parse(responseBody);
+    var token = jsonOfResponse['token']
+    return token
+  }
+}
+
+/**
  * This method stores the username and password and path into the global variable
  * properties which then can be accessed later by other methods through
  * properties object
