@@ -14,8 +14,8 @@ var cc = DataStudioApp.createCommunityConnector();
 /**
  * This method returns the authentication method we are going to use
  * for the 3rd-party service. At this time we will use user name and
- * password to authenticate the user. Later we might switch to
- * OAuth 2 method, which is more complex.
+ * password and a URL path to user's server site to authenticate the user. 
+ * Later we might switch to OAuth 2 method, which is more complex.
  *
  * Google Data Studio documentation for getAuthType:
  * https://developers.google.com/datastudio/connector/reference#getauthtype
@@ -25,8 +25,9 @@ var cc = DataStudioApp.createCommunityConnector();
  */
 function getAuthType() {
     return cc.newAuthTypeResponse()
-        .setAuthType(cc.AuthType.USER_PASS) // indicate we want to use user +
-                                            // password for authentication
+        // PATH_USER_PASS indicate we want to use user + password + a URL path
+        // to user's server for authentication
+        .setAuthType(cc.AuthType.PATH_USER_PASS) 
         .setHelpUrl('https://www.example.org/connector-auth-help')
         .build();
 }
@@ -34,13 +35,13 @@ function getAuthType() {
 /**
  * Checks if the 3rd-party service credentials are valid.
  * In this case this method will check if the user name +
- * password user entered are valid.
+ * password + path user entered are valid.
  *
  * API reference: https://developers.google.com/datastudio/connector/reference#required_userpass_key_functions
  *
  * If this method returns true then we call getConfig function and go to the next step
- * If this method returns false the user will be prompted for information to
- * authenticate/re-authenticate. (In this case via username and password)
+ * If this method returns false function setCredentials will be called, and 
+ * user will be prompted for information to authenticate/re-authenticate
  *
  * This method is required by user password authentication
  *
@@ -51,17 +52,18 @@ function isAuthValid() {
     const properties = PropertiesService.getUserProperties();
     var userName = properties.getProperty('dscc.username');
     var userPassword = properties.getProperty('dscc.password');
+    var path = properties.getProperty('path');
 
     // Logger.log(userName); // for debugging messages.
     // Logger.log(userPassword);
 
-    // return true if userName and userPassword are not null and
+    // return true if userName and userPassword and path are not null and
     // the combination is valid.
-    return userName && userPassword && validateCredentials(userName, userPassword);
+    return userName && userPassword && path && validateCredentials(userName, userPassword, path);
 }
 
 /**
- * given request object which has the user name and password,
+ * given request object which has the user name and password and path,
  * store them into properties if they are valid, and return
  * some error code as object if credential is not valid.
  *
@@ -70,14 +72,16 @@ function isAuthValid() {
  * "errorCode": string("NONE" | "INVALID_CREDENTIALS")
  */
 function setCredentials(request) {
-    var isCredentialsValid = validateCredentials(request.userPass.username, request.userPass.password);
+    var isCredentialsValid = validateCredentials(request.pathUserPass.username, 
+      request.pathUserPass.password, request.pathUserPass.path);
 
     if (!isCredentialsValid) {
       return {
         errorCode: "INVALID_CREDENTIALS"
       };
     } else {
-      storeUsernameAndPassword(request.userPass.username, request.userPass.password);
+      storeCredentials(request.pathUserPass.username, 
+        request.pathUserPass.password, request.pathUserPass.path);
       return {
         errorCode: "NONE"
       };
@@ -85,17 +89,19 @@ function setCredentials(request) {
   }
 
 /**
- * given the username and password,
+ * given the username and password and a path,
  * return true if this is a valid combination of username and password,
+ * by verifying over the path user provided.
  * else return false.
  *
  * @param {string} username Example: "hughsun@uw.edu"
  * @param {string} password Example: "123"
- * @returns {boolean} whether the username + password are correct
+ * @param {string} path Example: "https://sandbox.central.getodk.org/v1/projects/124/forms/"
+ * @returns {boolean} whether the username + password + path are correct
  */
-function validateCredentials(username, password) {
+function validateCredentials(username, password, path) {
 
-    var rawResponse = UrlFetchApp.fetch('https://sandbox.central.getodk.org/v1/projects/124/forms/', {
+    var rawResponse = UrlFetchApp.fetch(path, {
       method: 'GET',
       headers: {
         'Authorization': 'Basic ' + Utilities.base64Encode(username + ':' + password)
@@ -108,24 +114,25 @@ function validateCredentials(username, password) {
   }
 
 /**
- * This method stores the username and password into the global variable
+ * This method stores the username and password and path into the global variable
  * properties which then can be accessed later by other methods through
  * properties object
  *
  * @param {string} username Example: "hughsun@uw.edu"
  * @param {string} password Example: "123"
+ * @param {string} path Example: "https://sandbox.central.getodk.org/v1/projects/124/forms/"
  */
-function storeUsernameAndPassword(username, password) {
+function storeCredentials(username, password, path) {
     PropertiesService
       .getUserProperties()
       .setProperty('dscc.username', username)
-      .setProperty('dscc.password', password); // dscc stands for data studio community connector
+      .setProperty('dscc.password', password)
+      .setProperty('path', path); // dscc stands for data studio community connector
   };
 
 /**
  * This method clears user credentials for the third-party service.
- *
- * This method is required by user password authentication
+ * 
  */
 function resetAuth() {
     // PropertiesService is a global variable that keeps the information of
@@ -134,6 +141,7 @@ function resetAuth() {
     var properties = PropertiesService.getUserProperties();
     properties.deleteProperty('dscc.username');
     properties.deleteProperty('dscc.password');
+    properties.deleteProperty('path');
 }
 
 /**
