@@ -348,24 +348,42 @@ function getData(request) {
     return field.name;
   });
   var requestedFields = getFields().forIds(requestedFieldIds);
+  
+  var baseURL = user.getProperty('dscc.path');  // example: 'https://sandbox.central.getodk.org/v1'
 
   var url = [
-    'https://sandbox.central.getodk.org/v1/projects/',
+    baseURL,
+    '/projects/',
     request.configParams.projectId,
     '/forms/',
     request.configParams.xmlFormId,
     '.svc/',
     request.configParams.table
   ];
-
+  
   var response = UrlFetchApp.fetch(url.join(''), {
       method: 'GET',
       headers: {
         'contentType' : 'application/json',
-        'Authorization': 'Basic ' + Utilities.base64Encode(user.getProperty('dscc.username') + ':' + user.getProperty('dscc.password'))
+        'Authorization': 'Bearer ' + user.getProperty('dscc.token')
       },
       muteHttpExceptions: true
   });
+  
+  if (response !== 200) {
+    // this means response is not good, which means token expired.
+    // reset property's token to be a new token.
+    setToken();
+    // get another response based on the new token
+    response = UrlFetchApp.fetch(url.join(''), {
+      method: 'GET',
+      headers: {
+        'contentType' : 'application/json',
+        'Authorization': 'Bearer ' + user.getProperty('dscc.token')
+      },
+      muteHttpExceptions: true
+    });
+  }
   
   var parsedResponse = JSON.parse(response).value;
   var rows = responseToRows(requestedFields, parsedResponse);
