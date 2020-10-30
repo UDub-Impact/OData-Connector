@@ -50,16 +50,10 @@ function getAuthType() {
  */
 function isAuthValid() {
     const properties = PropertiesService.getUserProperties();
-    var userName = properties.getProperty('dscc.username');
-    var userPassword = properties.getProperty('dscc.password');
-    var path = properties.getProperty('path');
-
-    // Logger.log(userName); // for debugging messages.
-    // Logger.log(userPassword);
-
-    // return true if userName and userPassword and path are not null and
-    // the combination is valid.
-    return userName && userPassword && path && validateCredentials(userName, userPassword, path);
+    var token = properties.getProperty('dscc.token');
+    // our authentication is valid if and only if token stored in properties service
+    // is not null.
+    return token !== null;
 }
 
 /**
@@ -72,7 +66,7 @@ function isAuthValid() {
  * "errorCode": string("NONE" | "INVALID_CREDENTIALS")
  */
 function setCredentials(request) {
-    var isCredentialsValid = validateCredentials(request.pathUserPass.username, 
+    var isCredentialsValid = validateAndStoreCredentials(request.pathUserPass.username, 
       request.pathUserPass.password, request.pathUserPass.path);
 
     if (!isCredentialsValid) {
@@ -80,8 +74,6 @@ function setCredentials(request) {
         errorCode: "INVALID_CREDENTIALS"
       };
     } else {
-      storeCredentials(request.pathUserPass.username, 
-        request.pathUserPass.password, request.pathUserPass.path);
       return {
         errorCode: "NONE"
       };
@@ -94,35 +86,52 @@ function setCredentials(request) {
  * by verifying over the path user provided.
  * else return false.
  *
+ * additionally, this function will put username, password, path, token
+ * into properties validation is successful.
+ *
  * @param {string} username Example: "hughsun@uw.edu"
  * @param {string} password Example: "123"
- * @param {string} path Example: "https://sandbox.central.getodk.org/v1/projects/124/forms/"
+ * @param {string} path Example: "https://sandbox.central.getodk.org/v1"
  * @returns {boolean} whether the username + password + path are correct
  */
-function validateCredentials(username, password, path) {
-
-    var rawResponse = UrlFetchApp.fetch(path, {
-      method: 'GET',
-      headers: {
-        'Authorization': 'Basic ' + Utilities.base64Encode(username + ':' + password)
-      },
-      muteHttpExceptions: true
-    });
-    // if response code == 200 means verification of username and password
-    // succeeded.
-    return rawResponse.getResponseCode() === 200;
+function validateAndStoreCredentials(username, password, path) {
+  var properties = PropertiesService.getUserProperties();
+  var token = properties.getProperty('dscc.token');
+  if (token !== null) {
+    // this means that we already set the token, which means
+    // that we could get token from user information, so credential is valid
+    return true;
+  } else {
+    // we haven't fetched token or verify if username and password are right
+    // -- fetch a token and verify if it is valid token
+    token = getToken(username, password, path);
+    if (token === null) {
+      // null token means not valid credentials
+      return false;
+    } else {
+      // if we are at here we know user information is right. store them away
+      // in properties
+      storeCredentials(username, password, path);
+      // also store token.
+      properties.setProperty('dscc.token', token);
+      return true;
+    }
   }
+}
 
 /**
  * given username, password, and a URL base path, this function returns
  * the authorization token as a string, if the username and password are
  * valid, else function returns null to indicate authentication failed.
- * Notice that the following API requests need to put this token in the headers
- * in order to authenticate.
+ * Notice that after this function other API requests need to put this token in the headers
+ * in order to authenticate. 
  * 
+ * Assumption: path + '/sessions' is the URL that we can send username + password to
+ * to authenticate.
+ *
  * @param {string} username Example: "udubimpact@gmail.com"
  * @param {string} password Example: "impact++2020"
- * @param {string} path Example: "https://sandbox.central.getodk.org/v1"
+ * @param {string} path Example: "https://sandbox.central.getodk.org/v1" (assumes without / in the end)
  * @returns {string} returns the token as a string if username + password are valid, else return null. 
  */
 function getToken(username, password, path) {
@@ -165,14 +174,15 @@ function getToken(username, password, path) {
  *
  * @param {string} username Example: "hughsun@uw.edu"
  * @param {string} password Example: "123"
- * @param {string} path Example: "https://sandbox.central.getodk.org/v1/projects/124/forms/"
+ * @param {string} path Example: "https://sandbox.central.getodk.org/v1"
  */
 function storeCredentials(username, password, path) {
+    // dscc stands for data studio community connector
     PropertiesService
       .getUserProperties()
       .setProperty('dscc.username', username)
       .setProperty('dscc.password', password)
-      .setProperty('path', path); // dscc stands for data studio community connector
+      .setProperty('dscc.path', path);
   };
 
 /**
@@ -184,9 +194,24 @@ function resetAuth() {
     // the user. In this case we need to remove user name and password
     // from that global variable.
     var properties = PropertiesService.getUserProperties();
-    properties.deleteProperty('dscc.username');
-    properties.deleteProperty('dscc.password');
-    properties.deleteProperty('path');
+    properties.deleteAllProperties();
+}
+
+/**
+ * This method set/reset the dscc.token field within the properties object
+ * by recalling getToken() function. (remember token expires within 24 hours)
+ * if username and password aren't right, will put a NULL token in the properties.
+ *
+ * Assumption: properties have valid dscc.username, dscc.password, dscc.path fields.
+ *
+ */
+function setToken() {
+  var properties = PropertiesService.getUserProperties();
+  var username = properties.getProperty('dscc.username');
+  var password = properties.getProperty('dscc.password');
+  var path = properties.getProperty('dscc.path');
+  var token = getToken(username, password, path);
+  properties.setProperty('dscc.token', token);
 }
 
 /**
