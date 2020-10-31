@@ -10,7 +10,7 @@
   "runtimeVersion": "V8",
   "dataStudio": {
     "name": "ODK central API connector",
-    "logoUrl": "https://getodk-a3b1.kxcdn.com/uploads/default/original/2X/3/381d364b5dd1069f6540bbd7a38ea48f11023ae9.jpg",
+    "logoUrl": "https://github.com/UDub-Impact/OData-Connector/blob/master/impact_logo.png",
     "company": "UW Impact++",
     "companyUrl": "https://sites.google.com/view/udubimpact",
     "addonUrl": "https://github.com/UDub-Impact/OData-Connector/blob/master/readme.md",
