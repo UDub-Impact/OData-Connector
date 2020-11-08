@@ -283,15 +283,40 @@
        var obj = base[i];
        Logger.log(obj.Name);
   
+       type = getType(obj.Type, types);
+       
        fields.newDimension()
        .setId(obj.Name)
-       .setType(types.TEXT);
-       
+       .setType(type);
      }
  
      return fields;
  }
  
+ /**
+ * Converts OData types to Google Data types. Defaults to types.TEXT.
+ */
+ function getType(objType, types) {
+   Logger.log(objType);
+   switch (objType) {
+     case "Edm.Boolean":
+       return types.BOOLEAN;
+     case "Edm.DateTimeOffset":
+     case "Edm.Date":
+       return types.YEAR_MONTH_DAY_SECOND;
+     case "Edm.Int16":
+     case "Edm.Int32":
+     case "Edm.Int64":
+     case "Edm.Double":
+     case "Edm.Single":
+       return types.NUMBER;
+     case "Edm.String":
+       return types.TEXT;
+   }
+   
+   return types.TEXT;
+ }
+
  function testSchema(request) {
     var user = PropertiesService.getUserProperties();
     var baseURL = user.getProperty('dscc.path');  // example: 'https://sandbox.central.getodk.org/v1'
