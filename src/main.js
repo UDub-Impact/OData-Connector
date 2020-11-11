@@ -398,17 +398,10 @@ function responseToRows(requestedFields, response) {
   return response.map(function(submissions) {
     var row = [];
     requestedFields.asArray().forEach(function (field) {
-      switch (field.getId()) {
-        case 'student_name':
-          return row.push(submissions.student_name);
-        case 'student_age':
-          return row.push(submissions.student_age);
-        case 'student_school_year':
-          return row.push(submissions.student_school_year);
-        case 'submissionDate':
-          return row.push(submissions.__system.submissionDate)
-        default:
-          return row.push('');
+      if (field.getId() in submissions) {
+        return row.push(submissions[field.getId()]);
+      } else {
+        return row.push('');
       }
     });
     return { values: row };
