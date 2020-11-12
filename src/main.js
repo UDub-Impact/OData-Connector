@@ -275,76 +275,103 @@ function getFields(request) {
   var fields = cc.getFields();
   var types = cc.FieldType;
   var aggregations = cc.AggregationType;
-
+  
   var json = testSchema(request);
-  var base = json.DataServices.Schema[1].EntityType.Property;
-
-  for(var i = 0; i < base.length; i++) {
-    var obj = base[i];
-    Logger.log(obj.Name);
-
-    type = getType(obj.Type, types);
+  
+  // json: [{"path":"/student_info","name":"student_info","type":"structure","binary":null},
+  //        {"path":"/student_info/name","name":"name","type":"string","binary":null},
+  //        {"path":"/student_info/age","name":"age","type":"int","binary":null}]
+  // an array of objects
+  
+  for (var i = 0; i < json.length; i++) {
+    // json[i] is an object like {"path":"/student_info","name":"student_info","type":"structure","binary":null}
     
-    fields.newDimension()
-    .setId(obj.Name)
-    .setType(type);
+    // disregard some metadata schema
+    if (json[i]['name'] === 'instanceID') {
+      continue;
+    }
+    
+    var typesObj = getGDSType(json[i]['type'])
+    
+    // this means this data type in Odata fails to convert
+    // to data type in Google data studio
+    if (typesObj === null) {
+      continue;
+    }
+    
+    // typesObj: {'conceptType' : 'Dimension'('metric'), 'dataType': 'types.STRING'}
+    var conceptType = typesObj['conceptType'];
+    var dataType = typesObj['dataType'];
+    var nameOfField = json[i]['path'];
+    
+    if (conceptType === 'dimension') {
+      fields.newDimension()
+      .setId(nameOfField)
+      .setType(dataType);
+    } else if (conceptType === 'metric') {
+      fields.newMetric()
+      .setId(nameOfField)
+      .setType(dataType);
+    }
   }
-
+  
   return fields;
 }
 
 /**
- * Converts OData types to Google Data types. Defaults to types.TEXT.
- */
-function getType(objType, types) {
+* This method returns an object that has two fields that indicate the Google
+* data studio concept type and data type of this type from Odata passed in
+* as a parameter.
+*
+* if this type from Odata is currently unrecognized or doesn't have
+* a correspondence in google data studio, return null.
+*
+* @param {String} objType a string that represents a type in odata. Example: "int", "string"
+* @return {object} example: {'conceptType': 'dimension'/'metric', 'dataType': types.BOOLEAN}
+*/
+function getGDSType(objType) {
+  var types = cc.FieldType;
+  
   Logger.log(objType);
+  
   switch (objType) {
-    case "Edm.Boolean":
-      return types.BOOLEAN;
-    case "Edm.DateTimeOffset":
-    case "Edm.Date":
-      return types.YEAR_MONTH_DAY_SECOND;
-    case "Edm.Int16":
-    case "Edm.Int32":
-    case "Edm.Int64":
-    case "Edm.Double":
-    case "Edm.Single":
-      return types.NUMBER;
-    case "Edm.String":
-      return types.TEXT;
+    case "int":
+      return {'conceptType': 'dimension', 'dataType': types.NUMBER};
+    case "string":
+      return {'conceptType': 'metric', 'dataType': types.TEXT}
   }
   
-  return types.TEXT;
+  return null;
 }
 
 function testSchema(request) {
   var user = PropertiesService.getUserProperties();
   var baseURL = user.getProperty('dscc.path');  // example: 'https://sandbox.central.getodk.org/v1'
   
-  if(user.getProperty('projectId') == null) {
+  if(user.getProperty('projectId')) {
     var url = [
-    baseURL,
-      '/projects/',
-      request.configParams.projectId,
-      '/forms/',
-      request.configParams.xmlFormId,
-      '.svc/$metadata'
-    ];
-  } else {
-    var url = [
-    baseURL,
+      baseURL,
       '/projects/',
       user.getProperty('projectId'),
       '/forms/',
       user.getProperty('xmlFormId'),
-      '.svc/$metadata'
+      '/fields'
+    ];
+  } else {
+    var url = [
+      baseURL,
+      '/projects/',
+      request.configParams.projectId,
+      '/forms/',
+      request.configParams.xmlFormId,
+      '/fields'
     ];
   }
+  
   
   var response = UrlFetchApp.fetch(url.join(''), {
     method: 'GET',
     headers: {
-      'contentType' : 'application/xml',
       'Authorization': 'Bearer ' + user.getProperty('dscc.token')
     },
     muteHttpExceptions: true
@@ -358,24 +385,16 @@ function testSchema(request) {
     response = UrlFetchApp.fetch(url.join(''), {
       method: 'GET',
       headers: {
-        'contentType' : 'application/xml',
         'Authorization': 'Bearer ' + user.getProperty('dscc.token')
       },
       muteHttpExceptions: true
     });
   }
-    
-  var URL = "https://script.google.com/macros/s/AKfycbzNhEv3Nb38Tr277Ws0rUMGjXutkrGzEtLXfdX8XxThU8SUa-c/exec";
   
-  var result = UrlFetchApp.fetch(URL , {
-    method:"POST",
-    payload:{
-      convert:response.getContentText()
-    }
-  });
+  Logger.log(response);
   
-  var json = JSON.parse(result)
-
+  var json = JSON.parse(response);
+  
   return json;
 }
 
