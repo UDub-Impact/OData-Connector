@@ -291,13 +291,7 @@ function getFields(request) {
       continue;
     }
     
-    var typesObj = getGDSType(json[i]['type'])
-    
-    // this means this data type in Odata fails to convert
-    // to data type in Google data studio
-    if (typesObj === null) {
-      continue;
-    }
+    var typesObj = getGDSType(json[i]['type']);
     
     // typesObj: {'conceptType' : 'Dimension'('metric'), 'dataType': 'types.STRING'}
     var conceptType = typesObj['conceptType'];
