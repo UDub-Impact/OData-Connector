@@ -285,19 +285,21 @@ function getFields(request) {
   
   for (var i = 0; i < json.length; i++) {
     // json[i] is an object like {"path":"/student_info","name":"student_info","type":"structure","binary":null}
-    
-    // disregard some metadata schema
-    if (json[i]['name'] === 'instanceID') {
+
+    var ODataType = json[i]['type'];
+
+    // disregard the meta data schema
+    if (ODataType === 'structure' ||  json[i]['name'] === 'instanceID') {
       continue;
     }
-    
-    var typesObj = getGDSType(json[i]['type']);
+
+    var typesObj = getGDSType(ODataType);
     
     // typesObj: {'conceptType' : 'Dimension'('metric'), 'dataType': 'types.STRING'}
     var conceptType = typesObj['conceptType'];
     var dataType = typesObj['dataType'];
     var nameOfField = json[i]['path'];
-    
+
     if (conceptType === 'dimension') {
       fields.newDimension()
       .setId(nameOfField)
