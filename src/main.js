@@ -453,6 +453,15 @@ function testSchema(request) {
     });
   }
 
+  if (response !== 200) {
+    // if we still can't get the right response, after resetting token,
+    // means user enter the wrong configuration parameters. Maybe they typed
+    // the wrong form name, etc, throw an exception.
+    cc.newDebugError()
+      .setText("you typed the wrong configuration parameter, please check you entered the right form id + project id")
+      .throwException();
+  }
+
   if (debug) {
     Logger.log('we are in testSchema()');
     Logger.log('response from API enpoints that requests schema looks like');
