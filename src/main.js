@@ -323,8 +323,12 @@ function getFields(request) {
 * data studio concept type and data type of this type from Odata passed in
 * as a parameter.
 *
+* documentaion of data types from odata world: https://getodk.github.io/xforms-spec/#data-types
+* documentation of data types for Google data studio: https://developers.google.com/datastudio/connector/reference#field
+*
 * if this type from Odata is currently unrecognized or doesn't have
-* a correspondence in google data studio, return null.
+* a correspondence in google data studio, the default is to return
+* {'conceptType': 'dimension', 'dataType': types.TEXT}
 *
 * @param {String} objType a string that represents a type in odata. Example: "int", "string"
 * @return {object} example: {'conceptType': 'dimension'/'metric', 'dataType': types.BOOLEAN}
@@ -336,12 +340,45 @@ function getGDSType(objType) {
   
   switch (objType) {
     case "int":
-      return {'conceptType': 'dimension', 'dataType': types.NUMBER};
+      return {'conceptType': 'metric', 'dataType': types.NUMBER};
     case "string":
-      return {'conceptType': 'metric', 'dataType': types.TEXT}
+      return {'conceptType': 'dimension', 'dataType': types.TEXT};
+    case "boolean":
+      return {'conceptType': 'metric', 'dataType': types.BOOLEAN};
+    case "decimal":
+      return {'conceptType': 'metric', 'dataType': types.NUMBER};
+    case "date":
+      // GDS format: "20170317"
+      // Odata format: "2017-03-17"
+      // need conversion later when parsing data.
+      return {'conceptType': 'dimension', 'dataType': types.YEAR_MONTH_DAY};
+    case "time":
+      // odata format: "12-00 (noon)"
+      // no corresponding data type in GDS. GDS has hours and minutes as separate data types
+      return {'conceptType': 'dimension', 'dataType': types.HOUR};
+    case "dateTime":
+      return {'conceptType': 'dimension', 'dataType': types.YEAR_MONTH_DAY_HOUR};
+    case "geopoint":
+      // odata: Space-separated list latitude (decimal degrees), longitude (decimal degrees),
+      //        altitude (decimal meters) and accuracy (decimal meters)
+      // GDS: "51.5074, -0.1278"
+      return {'conceptType': 'dimension', 'dataType': types.LATITUDE_LONGITUDE};
+    case "geotrace":
+      // no good representation in GDS
+      return {'conceptType': 'dimension', 'dataType': types.GEO};
+    case "geoshape":
+      // no good representation in GDS
+      return {'conceptType': 'dimension', 'dataType': types.GEO};
+    case "binary":
+      // odata: URI pointing to binary file.
+      return {'conceptType': 'dimension', 'dataType': types.URL};
+    case "barcode":
+      return {'conceptType': 'dimension', 'dataType': types.TEXT};
+    case "intent":
+      return {'conceptType': 'dimension', 'dataType': types.TEXT};
   }
   
-  return null;
+  return {'conceptType': 'dimension', 'dataType': types.TEXT};
 }
 
 function testSchema(request) {
