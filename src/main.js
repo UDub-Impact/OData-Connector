@@ -326,15 +326,15 @@ function getFields(request) {
 * a correspondence in google data studio, the default is to return
 * {'conceptType': 'dimension', 'dataType': types.TEXT}
 *
-* @param {String} objType a string that represents a type in odata. Example: "int", "string"
+* @param {String} OdataType a string that represents a type in odata. Example: "int", "string"
 * @return {object} example: {'conceptType': 'dimension'/'metric', 'dataType': types.BOOLEAN}
 */
-function getGDSType(objType) {
+function getGDSType(OdataType) {
   var types = cc.FieldType;
   
-  Logger.log(objType);
+  Logger.log(OdataType);
   
-  switch (objType) {
+  switch (OdataType) {
     case "int":
       return {'conceptType': 'metric', 'dataType': types.NUMBER};
     case "string":
