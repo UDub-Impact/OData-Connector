@@ -1,12 +1,12 @@
 /**
- * Copyright 2020 Pieter Benjamin, Rachel Phuong, Hugh Sun, Ratik Koka
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
+* Copyright 2020 Pieter Benjamin, Rachel Phuong, Hugh Sun, Ratik Koka
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
 
 // global connector variable that each method can access.
 var cc = DataStudioApp.createCommunityConnector();
@@ -24,12 +24,12 @@ var cc = DataStudioApp.createCommunityConnector();
 *                   be used by the connector
 */
 function getAuthType() {
-    return cc.newAuthTypeResponse()
-        // PATH_USER_PASS indicate we want to use user + password + a URL path
-        // to user's server for authentication
-        .setAuthType(cc.AuthType.PATH_USER_PASS) 
-        .setHelpUrl('https://www.example.org/connector-auth-help')
-        .build();
+  return cc.newAuthTypeResponse()
+  // PATH_USER_PASS indicate we want to use user + password + a URL path
+  // to user's server for authentication
+  .setAuthType(cc.AuthType.PATH_USER_PASS) 
+  .setHelpUrl('https://www.example.org/connector-auth-help')
+  .build();
 }
 
 /**
@@ -49,11 +49,11 @@ function getAuthType() {
 *                    false otherwise.
 */
 function isAuthValid() {
-    const properties = PropertiesService.getUserProperties();
-    var token = properties.getProperty('dscc.token');
-    // our authentication is valid if and only if token stored in properties service
-    // is not null.
-    return token !== null;
+  const properties = PropertiesService.getUserProperties();
+  var token = properties.getProperty('dscc.token');
+  // our authentication is valid if and only if token stored in properties service
+  // is not null.
+  return token !== null;
 }
 
 /**
@@ -66,19 +66,19 @@ function isAuthValid() {
 * "errorCode": string("NONE" | "INVALID_CREDENTIALS")
 */
 function setCredentials(request) {
-    var isCredentialsValid = validateAndStoreCredentials(request.pathUserPass.username, 
-      request.pathUserPass.password, request.pathUserPass.path);
-
-    if (!isCredentialsValid) {
-      return {
-        errorCode: "INVALID_CREDENTIALS"
-      };
-    } else {
-      return {
-        errorCode: "NONE"
-      };
-    }
+  var isCredentialsValid = validateAndStoreCredentials(request.pathUserPass.username, 
+                                                       request.pathUserPass.password, request.pathUserPass.path);
+  
+  if (!isCredentialsValid) {
+    return {
+      errorCode: "INVALID_CREDENTIALS"
+    };
+  } else {
+    return {
+      errorCode: "NONE"
+    };
   }
+}
 
 /**
 * given the username and password and a path,
@@ -177,24 +177,24 @@ function getToken(username, password, path) {
 * @param {string} path Example: "https://sandbox.central.getodk.org/v1"
 */
 function storeCredentials(username, password, path) {
-    // dscc stands for data studio community connector
-    PropertiesService
-      .getUserProperties()
-      .setProperty('dscc.username', username)
-      .setProperty('dscc.password', password)
-      .setProperty('dscc.path', path);
-  };
+  // dscc stands for data studio community connector
+  PropertiesService
+  .getUserProperties()
+  .setProperty('dscc.username', username)
+  .setProperty('dscc.password', password)
+  .setProperty('dscc.path', path);
+};
 
 /**
 * This method clears user credentials for the third-party service.
 * 
 */
 function resetAuth() {
-    // PropertiesService is a global variable that keeps the information of
-    // the user. In this case we need to remove user name and password
-    // from that global variable.
-    var properties = PropertiesService.getUserProperties();
-    properties.deleteAllProperties();
+  // PropertiesService is a global variable that keeps the information of
+  // the user. In this case we need to remove user name and password
+  // from that global variable.
+  var properties = PropertiesService.getUserProperties();
+  properties.deleteAllProperties();
 }
 
 /**
@@ -225,52 +225,97 @@ function setToken() {
 */
 function getConfig(request) {
   var config = cc.getConfig();
-
+  
   config.newInfo()
   .setId('Request Data')
   .setText('Enter details for the Data you would like to access.');
-
+  
   config.newTextInput()
   .setId('projectId')
   .setName('Enter a Project Id')
   .setHelpText('e.g. 124');
-
+  
   config.newTextInput()
   .setId('xmlFormId')
   .setName('Enter a Form Id')
   .setHelpText('e.g. odata connector scheme');
-
+  
   config.newTextInput()
   .setId('table')
   .setName('Enter a Table Name')
   .setHelpText('e.g. Submissions');
-
+  
   config.newTextInput()
   .setId('$skip')
   .setName('Number of rows to skip (Optional)')
   .setHelpText('e.g. 10');
-
+  
   config.newTextInput()
   .setId('$top')
   .setName('Number of rows to display from the top (Optional)')
   .setHelpText('e.g. 5');
-
+  
   config.newSelectSingle()
   .setId('$count')
   .setName('Display Total Number of Rows')
   .addOption(config.newOptionBuilder().setLabel('True').setValue('true'))
   .addOption(config.newOptionBuilder().setLabel('False').setValue('false'));
-
+  
   config.newSelectSingle()
   .setId('$wkt')
   .setName('Display GeoJSON as Well-Known Text')
   .addOption(config.newOptionBuilder().setLabel('True').setValue('true'))
   .addOption(config.newOptionBuilder().setLabel('False').setValue('false'));
-
+  
   return config.build();
 }
 
+
+//function getFields(request) {
+//  
+//  Logger.log('we are inside of getFields() function.');
+//  Logger.log('the request parameter to getFields() is:');
+//  Logger.log(request);
+//  
+//  var cc = DataStudioApp.createCommunityConnector();
+//  var fields = cc.getFields();
+//  var types = cc.FieldType;
+//  var aggregations = cc.AggregationType;
+//  
+//  fields.newDimension()
+//  .setId('student_name')
+//  .setType(types.TEXT);
+//  
+//  fields.newMetric()
+//  .setId('student_age')
+//  .setType(types.NUMBER);
+//  
+//  fields.newMetric()
+//  .setId('student_school_year')
+//  .setType(types.TEXT);
+//  
+//  fields.newDimension()
+//  .setId('submissionDate')
+//  .setType(types.YEAR_MONTH_DAY);
+//  
+//  Logger.log('before we exit out of getFields(), fields variable is');
+//  fields
+//  .asArray()
+//  .map(function(field) {
+//     Logger.log(field.getId());
+//  });
+//  
+//  return fields;
+//}
+
+
 function getFields(request) {
+  
+  Logger.log('we are inside of getFields() function.');
+  Logger.log('the request parameter to getFields() is:');
+  Logger.log(request)
+  
+  
   var cc = DataStudioApp.createCommunityConnector();
   var fields = cc.getFields();
   var types = cc.FieldType;
@@ -298,8 +343,11 @@ function getFields(request) {
     // typesObj: {'conceptType' : 'Dimension'('metric'), 'dataType': 'types.STRING'}
     var conceptType = typesObj['conceptType'];
     var dataType = typesObj['dataType'];
-    var nameOfField = json[i]['path'];
-
+    var nameOfField = json[i]['path'];  // looks like "/student_info/name"
+    nameOfField = nameOfField.substring(1, nameOfField.length); // looks like "student_info/name" now
+    
+    nameOfField = nameOfField.replace(/-/g, "_"); // necessary because we expect field names to have _, not -.
+    
     if (conceptType === 'dimension') {
       fields.newDimension()
       .setId(nameOfField)
@@ -310,6 +358,14 @@ function getFields(request) {
       .setType(dataType);
     }
   }
+  
+  Logger.log('before we exit out of getFields(), fields variable is');
+  fields
+  .asArray()
+  .map(function(field) {
+     Logger.log(field.getId());
+  });
+  Logger.log('exiting out of getFields()');
   
   return fields;
 }
@@ -331,8 +387,6 @@ function getFields(request) {
 */
 function getGDSType(OdataType) {
   var types = cc.FieldType;
-  
-  Logger.log(OdataType);
   
   switch (OdataType) {
     case "int":
@@ -381,7 +435,12 @@ function testSchema(request) {
   var user = PropertiesService.getUserProperties();
   var baseURL = user.getProperty('dscc.path');  // example: 'https://sandbox.central.getodk.org/v1'
   
-  if(user.getProperty('projectId')) {
+  Logger.log('we are inside of testSchema() function!');
+  Logger.log('request parameter is');
+  Logger.log(request);
+  
+  if (request === undefined) {
+    // this means that we are calling getFields() within the getData() function.
     var url = [
       baseURL,
       '/projects/',
@@ -400,6 +459,7 @@ function testSchema(request) {
       '/fields'
     ];
   }
+  
   
   
   var response = UrlFetchApp.fetch(url.join(''), {
@@ -423,10 +483,14 @@ function testSchema(request) {
       muteHttpExceptions: true
     });
   }
-  
+  Logger.log('we are in testSchema()');
+  Logger.log('response from API enpoints that requests schema looks like');
   Logger.log(response);
   
   var json = JSON.parse(response);
+  
+  Logger.log('exiting out of testSchema()');
+  
   
   return json;
 }
@@ -435,7 +499,16 @@ function testSchema(request) {
 *
 */
 function getSchema(request) {
-  var fields = getFields(request).build();
+  
+  Logger.log('we are in getSchema(), with request parameter of:');
+  Logger.log(request);
+  
+  var fieldsBeforeBuilding = getFields(request);
+  var properties = PropertiesService.getUserProperties();
+  
+  var fields = fieldsBeforeBuilding.build();
+  Logger.log('before we exit out of getSchema(), fields is:');
+  Logger.log(fields);
   return { schema: fields };
 }
 
@@ -447,15 +520,38 @@ function getSchema(request) {
 * @returns {Object} A JavaScript object that contains the rows of a table.
 */
 function responseToRows(requestedFields, response) {
+  
+  Logger.log('we are in responseToRows() function');
+  Logger.log('requestedFields parameter is:');
+  requestedFields
+  .asArray()
+  .map(function(field) {
+    Logger.log(field.getId());
+  });
+  Logger.log('response parameter is');
+  Logger.log(response);
+  
   return response.map(function(submissions) {
+    
+    Logger.log('we are inside of responseToRows/response.map function');
+    Logger.log('and submissions variable looks like:');
+    Logger.log(submissions);
+    
+    
     var row = [];
     requestedFields.asArray().forEach(function (field) {
-      if (field.getId() in submissions) {
-        return row.push(submissions[field.getId()]);
-      } else {
-        return row.push('');
+      
+      var path = field.getId(); // looks like "student_info/name"
+      var arrayOfFields = path.split('/'); // looks like ['student_info', 'name']
+      
+      var data = submissions;
+      
+      for (fieldName of arrayOfFields) {
+        data = data[fieldName];
       }
+      return row.push(data);
     });
+        
     return { values: row };
   });
 }
@@ -470,18 +566,37 @@ function responseToRows(requestedFields, response) {
 * @return {Object} A JavaScript object that contains the schema and data for the given request.
 */
 function getData(request) {
-
+  
+  Logger.log('we are in getData() function.');
+  Logger.log('request parameter within getData() is:');
+  Logger.log(request);
+  
+  
   var user = PropertiesService.getUserProperties();
   user.setProperty('projectId', request.configParams.projectId);
   user.setProperty('xmlFormId', request.configParams.xmlFormId);
-
+  
   var requestedFieldIds = request.fields.map(function(field) {
     return field.name;
   });
+  
+  
+      
   var requestedFields = getFields().forIds(requestedFieldIds);
+      
+  
+  
+  
+  Logger.log('requestedFields are');
+  requestedFields
+  .asArray()
+  .map(function(field) {
+    Logger.log(field.getId());
+  });
+  
   
   var baseURL = user.getProperty('dscc.path');  // example: 'https://sandbox.central.getodk.org/v1'
-
+  
   var url = [
     baseURL,
     '/projects/',
@@ -499,14 +614,17 @@ function getData(request) {
     '&%24wkt=',
     request.configParams.$wkt
   ];
-  
+      
+  Logger.log('url is');
+  Logger.log(url);
+      
   var response = UrlFetchApp.fetch(url.join(''), {
-      method: 'GET',
-      headers: {
-        'contentType' : 'application/json',
-        'Authorization': 'Bearer ' + user.getProperty('dscc.token')
-      },
-      muteHttpExceptions: true
+    method: 'GET',
+    headers: {
+      'contentType' : 'application/json',
+      'Authorization': 'Bearer ' + user.getProperty('dscc.token')
+    },
+    muteHttpExceptions: true
   });
   
   if (response !== 200) {
@@ -527,11 +645,18 @@ function getData(request) {
   var parsedResponse = JSON.parse(response).value;
   var rows = responseToRows(requestedFields, parsedResponse);
   
+  
+  
+  Logger.log('before we exit getData(), rows are:');
+  Logger.log(rows);
+  
+  
+  
   return {
     schema: requestedFields.build(),
     rows: rows
   };
-
+  return null;
 }
 
 /**
