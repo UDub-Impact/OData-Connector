@@ -274,10 +274,11 @@ function getConfig(request) {
 
 function getFields(request) {
   
-  Logger.log('we are inside of getFields() function.');
-  Logger.log('the request parameter to getFields() is:');
-  Logger.log(request)
-  
+  if (debug) {
+    Logger.log('we are inside of getFields() function.');
+    Logger.log('the request parameter to getFields() is:');
+    Logger.log(request)
+  }
   
   var cc = DataStudioApp.createCommunityConnector();
   var fields = cc.getFields();
@@ -323,14 +324,16 @@ function getFields(request) {
     id = id + 1;
   }
   
-  Logger.log('before we exit out of getFields(), fields variable is');
-  fields
-  .asArray()
-  .map(function(field) {
-     Logger.log(field.getId());
-  });
-  Logger.log('exiting out of getFields()');
-  
+  if (debug) {
+    Logger.log('before we exit out of getFields(), fields variable is');
+    fields
+    .asArray()
+    .map(function(field) {
+       Logger.log(field.getId());
+    });
+    Logger.log('exiting out of getFields()');
+  }
+
   return fields;
 }
 
@@ -399,10 +402,12 @@ function testSchema(request) {
   var user = PropertiesService.getUserProperties();
   var baseURL = user.getProperty('dscc.path');  // example: 'https://sandbox.central.getodk.org/v1'
   
-  Logger.log('we are inside of testSchema() function!');
-  Logger.log('request parameter is');
-  Logger.log(request);
-  
+  if (debug) {
+    Logger.log('we are inside of testSchema() function!');
+    Logger.log('request parameter is');
+    Logger.log(request);
+  }
+
   if (request === undefined) {
     // this means that we are calling getFields() within the getData() function.
     var url = [
@@ -447,15 +452,15 @@ function testSchema(request) {
       muteHttpExceptions: true
     });
   }
-  Logger.log('we are in testSchema()');
-  Logger.log('response from API enpoints that requests schema looks like');
-  Logger.log(response);
+
+  if (debug) {
+    Logger.log('we are in testSchema()');
+    Logger.log('response from API enpoints that requests schema looks like');
+    Logger.log(response);
+    Logger.log('exiting out of testSchema()');
+  }
   
   var json = JSON.parse(response);
-  
-  Logger.log('exiting out of testSchema()');
-  
-  
   return json;
 }
 
@@ -464,15 +469,19 @@ function testSchema(request) {
 */
 function getSchema(request) {
   
-  Logger.log('we are in getSchema(), with request parameter of:');
-  Logger.log(request);
+  if (debug) {
+    Logger.log('we are in getSchema(), with request parameter of:');
+    Logger.log(request);
+  }
   
   var fieldsBeforeBuilding = getFields(request);
-  var properties = PropertiesService.getUserProperties();
-  
   var fields = fieldsBeforeBuilding.build();
-  Logger.log('before we exit out of getSchema(), fields is:');
-  Logger.log(fields);
+  
+  if (debug) {
+    Logger.log('before we exit out of getSchema(), fields is:');
+    Logger.log(fields);
+  }
+  
   return { schema: fields };
 }
 
@@ -484,24 +493,25 @@ function getSchema(request) {
 * @returns {Object} A JavaScript object that contains the rows of a table.
 */
 function responseToRows(requestedFields, response) {
-  
-  Logger.log('we are in responseToRows() function');
-  Logger.log('requestedFields parameter is:');
-  requestedFields
-  .asArray()
-  .map(function(field) {
-    Logger.log(field.getId());
-  });
-  Logger.log('response parameter is');
-  Logger.log(response);
+  if (debug) {
+    Logger.log('we are in responseToRows() function');
+    Logger.log('requestedFields parameter is:');
+    requestedFields
+    .asArray()
+    .map(function(field) {
+      Logger.log(field.getId());
+    });
+    Logger.log('response parameter is');
+    Logger.log(response);
+  }
   
   return response.map(function(submissions) {
-    
-    Logger.log('we are inside of responseToRows/response.map function');
-    Logger.log('and submissions variable looks like:');
-    Logger.log(submissions);
-    
-    
+    if (debug) {
+      Logger.log('we are inside of responseToRows/response.map function');
+      Logger.log('and submissions variable looks like:');
+      Logger.log(submissions);
+    }
+  
     var row = [];
     requestedFields.asArray().forEach(function (field) {
       
@@ -530,11 +540,11 @@ function responseToRows(requestedFields, response) {
 * @return {Object} A JavaScript object that contains the schema and data for the given request.
 */
 function getData(request) {
-  
-  Logger.log('we are in getData() function.');
-  Logger.log('request parameter within getData() is:');
-  Logger.log(request);
-  
+  if (debug) {
+    Logger.log('we are in getData() function.');
+    Logger.log('request parameter within getData() is:');
+    Logger.log(request);
+  }
   
   var user = PropertiesService.getUserProperties();
   user.setProperty('projectId', request.configParams.projectId);
@@ -544,20 +554,16 @@ function getData(request) {
     return field.name;
   });
   
-  
-      
   var requestedFields = getFields().forIds(requestedFieldIds);
-      
-  
-  
-  
-  Logger.log('requestedFields are');
-  requestedFields
-  .asArray()
-  .map(function(field) {
-    Logger.log(field.getId());
-  });
-  
+
+  if (debug) {
+    Logger.log('requestedFields are');
+    requestedFields
+    .asArray()
+    .map(function(field) {
+      Logger.log(field.getId());
+    });
+  }
   
   var baseURL = user.getProperty('dscc.path');  // example: 'https://sandbox.central.getodk.org/v1'
   
@@ -609,18 +615,15 @@ function getData(request) {
   var parsedResponse = JSON.parse(response).value;
   var rows = responseToRows(requestedFields, parsedResponse);
   
-  
-  
-  Logger.log('before we exit getData(), rows are:');
-  Logger.log(rows);
-  
-  
+  if (debug) {
+    Logger.log('before we exit getData(), rows are:');
+    Logger.log(rows);
+  }
   
   return {
     schema: requestedFields.build(),
     rows: rows
   };
-  return null;
 }
 
 /**
