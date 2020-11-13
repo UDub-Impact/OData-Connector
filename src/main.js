@@ -10,6 +10,8 @@
 
 // global connector variable that each method can access.
 var cc = DataStudioApp.createCommunityConnector();
+var id = 0;
+var debug = false;
 
 /**
 * This method returns the authentication method we are going to use
@@ -270,45 +272,6 @@ function getConfig(request) {
   return config.build();
 }
 
-
-//function getFields(request) {
-//  
-//  Logger.log('we are inside of getFields() function.');
-//  Logger.log('the request parameter to getFields() is:');
-//  Logger.log(request);
-//  
-//  var cc = DataStudioApp.createCommunityConnector();
-//  var fields = cc.getFields();
-//  var types = cc.FieldType;
-//  var aggregations = cc.AggregationType;
-//  
-//  fields.newDimension()
-//  .setId('student_name')
-//  .setType(types.TEXT);
-//  
-//  fields.newMetric()
-//  .setId('student_age')
-//  .setType(types.NUMBER);
-//  
-//  fields.newMetric()
-//  .setId('student_school_year')
-//  .setType(types.TEXT);
-//  
-//  fields.newDimension()
-//  .setId('submissionDate')
-//  .setType(types.YEAR_MONTH_DAY);
-//  
-//  Logger.log('before we exit out of getFields(), fields variable is');
-//  fields
-//  .asArray()
-//  .map(function(field) {
-//     Logger.log(field.getId());
-//  });
-//  
-//  return fields;
-//}
-
-
 function getFields(request) {
   
   Logger.log('we are inside of getFields() function.');
@@ -318,8 +281,6 @@ function getFields(request) {
   
   var cc = DataStudioApp.createCommunityConnector();
   var fields = cc.getFields();
-  var types = cc.FieldType;
-  var aggregations = cc.AggregationType;
   
   var json = testSchema(request);
   
@@ -350,13 +311,16 @@ function getFields(request) {
     
     if (conceptType === 'dimension') {
       fields.newDimension()
-      .setId(nameOfField)
+      .setId(id.toString())
+      .setName(nameOfField)
       .setType(dataType);
     } else if (conceptType === 'metric') {
       fields.newMetric()
-      .setId(nameOfField)
+      .setId(id.toString())
+      .setName(nameOfField)
       .setType(dataType);
     }
+    id = id + 1;
   }
   
   Logger.log('before we exit out of getFields(), fields variable is');
@@ -541,7 +505,7 @@ function responseToRows(requestedFields, response) {
     var row = [];
     requestedFields.asArray().forEach(function (field) {
       
-      var path = field.getId(); // looks like "student_info/name"
+      var path = field.getName(); // looks like "student_info/name"
       var arrayOfFields = path.split('/'); // looks like ['student_info', 'name']
       
       var data = submissions;
