@@ -513,7 +513,7 @@ function responseToRows(requestedFields, response) {
     Logger.log('response parameter is');
     Logger.log(response);
   }
-  
+
   return response.map(function(submissions) {
     if (debug) {
       Logger.log('we are inside of responseToRows/response.map function');
@@ -530,13 +530,30 @@ function responseToRows(requestedFields, response) {
       var data = submissions;
       
       for (fieldName of arrayOfFields) {
-        data = data[fieldName];
+        data = convertData(data[fieldName], field.getType());
       }
       return row.push(data);
     });
         
     return { values: row };
   });
+}
+
+/**
+* This method makes adjustments to resolve mismatches between ODK datatypes and Google Data datatypes
+*/
+function convertData(data, type) {
+  var types = cc.FieldType;
+  switch (type) {
+  case types.HOUR:
+    // ODK time type
+    return data.substring(0, 2)
+  case types.YEAR_MONTH_DAY:
+    // ODK date type
+    return data.replace(/-/g, "");
+  default:
+    return data;
+  }
 }
 
 /**
@@ -562,9 +579,9 @@ function getData(request) {
   var requestedFieldIds = request.fields.map(function(field) {
     return field.name;
   });
-  
-  var requestedFields = getFields().forIds(requestedFieldIds);
 
+
+  var requestedFields = getFields().forIds(requestedFieldIds);
   if (debug) {
     Logger.log('requestedFields are');
     requestedFields
