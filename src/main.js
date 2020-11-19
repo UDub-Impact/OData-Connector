@@ -372,7 +372,8 @@ function getGDSType(OdataType) {
     case "time":
       // odata format: "12-00 (noon)"
       // no corresponding data type in GDS. GDS has hours and minutes as separate data types
-      return {'conceptType': 'dimension', 'dataType': types.HOUR};
+      // storing time as text for now to avoid losing any data
+      return {'conceptType': 'dimension', 'dataType': types.TEXT};
     case "dateTime":
       return {'conceptType': 'dimension', 'dataType': types.YEAR_MONTH_DAY_HOUR};
     case "geopoint":
@@ -545,14 +546,11 @@ function responseToRows(requestedFields, response) {
 function convertData(data, type) {
   var types = cc.FieldType;
   switch (type) {
-  case types.HOUR:
-    // ODK time type
-    return data.substring(0, 2)
-  case types.YEAR_MONTH_DAY:
-    // ODK date type
-    return data.replace(/-/g, "");
-  default:
-    return data;
+    case types.YEAR_MONTH_DAY:
+      // ODK date type
+      return data.replace(/-/g, "");
+    default:
+      return data;
   }
 }
 
