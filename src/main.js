@@ -453,7 +453,7 @@ function testSchema(request) {
     });
   }
 
-  if (response === 200) {
+  if (response !== 200) {
     // if we still can't get the right response, after resetting token,
     // means user enter the wrong configuration parameters. Maybe they typed
     // the wrong form name, etc, throw an exception.
