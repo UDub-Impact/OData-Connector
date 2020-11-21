@@ -549,6 +549,9 @@ function convertData(data, type) {
     case types.YEAR_MONTH_DAY:
       // ODK date type
       return data.replace(/-/g, "");
+    case types.LATITUDE_LONGITUDE:
+      // data = {coordinates=[-122.335575, 47.655831, 0.0], properties={accuracy=0.0}, type=Point}
+      return data['coordinates'].slice(0, 2).join(', '); // "-122.335575, 47.655831"
     default:
       return data;
   }
@@ -608,10 +611,12 @@ function getData(request) {
     '&%24wkt=',
     request.configParams.$wkt
   ];
-      
-  Logger.log('url is');
-  Logger.log(url);
-      
+  
+  if (debug) {
+    Logger.log('url is');
+    Logger.log(url);
+  }
+  
   var response = UrlFetchApp.fetch(url.join(''), {
     method: 'GET',
     headers: {
