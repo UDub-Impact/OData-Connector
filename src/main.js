@@ -383,10 +383,10 @@ function getGDSType(OdataType) {
       return {'conceptType': 'dimension', 'dataType': types.LATITUDE_LONGITUDE};
     case "geotrace":
       // no good representation in GDS
-      return {'conceptType': 'dimension', 'dataType': types.GEO};
+      return {'conceptType': 'dimension', 'dataType': types.TEXT};
     case "geoshape":
       // no good representation in GDS
-      return {'conceptType': 'dimension', 'dataType': types.GEO};
+      return {'conceptType': 'dimension', 'dataType': types.TEXT};
     case "binary":
       // odata: URI pointing to binary file.
       return {'conceptType': 'dimension', 'dataType': types.URL};
@@ -545,13 +545,25 @@ function responseToRows(requestedFields, response) {
 */
 function convertData(data, type) {
   var types = cc.FieldType;
+
   switch (type) {
+    case types.YEAR_MONTH_DAY_HOUR:
+      // ODK dateTime type
+      // Currently loses minutes field from ODK type -- alternatively we could convert to string
+      return data.replace(/[-T]/g, "").split(":")[0];
     case types.YEAR_MONTH_DAY:
       // ODK date type
       return data.replace(/-/g, "");
     case types.LATITUDE_LONGITUDE:
       // data = {coordinates=[-122.335575, 47.655831, 0.0], properties={accuracy=0.0}, type=Point}
       return data['coordinates'].slice(0, 2).join(', '); // "-122.335575, 47.655831"
+    case types.TEXT:
+      // handles other non-text datatypes that don't have a good gds equivalent
+      // eg. geoshape, geotrace
+      if (data !== null && typeof data === "object" && "type" in data) {
+        return JSON.stringify(data);
+      }
+      return data;
     default:
       return data;
   }
