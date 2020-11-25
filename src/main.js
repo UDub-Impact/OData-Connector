@@ -439,8 +439,8 @@ function testSchema(request) {
     },
     muteHttpExceptions: true
   });
-  
-  if (response !== 200) {
+   
+  if (response.getResponseCode() !== 200) {
     // this means response is not good, which means token expired.
     // reset property's token to be a new token.
     setToken();
@@ -453,14 +453,15 @@ function testSchema(request) {
       muteHttpExceptions: true
     });
   }
-
-  if (response === 200) {
+  
+  if (response.getResponseCode() !== 200) {
     // if we still can't get the right response, after resetting token,
     // means user enter the wrong configuration parameters. Maybe they typed
     // the wrong form name, etc, throw an exception.
-    cc.newDebugError()
-      .setText("you typed the wrong configuration parameter, please check you entered the right form id + project id")
-      .throwException();
+    cc.newUserError()
+    .setText("You have entered the wrong combination of project ID, form ID, and table Name. Please re-enter the correct information.")
+    .setDebugText("User has entered the wrong project ID, form ID, and Table Name. API request of schema failed.")
+    .throwException();
   }
 
   if (debug) {
@@ -638,7 +639,7 @@ function getData(request) {
     muteHttpExceptions: true
   });
   
-  if (response !== 200) {
+  if (response.getResponseCode() !== 200) {
     // this means response is not good, which means token expired.
     // reset property's token to be a new token.
     setToken();
