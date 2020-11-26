@@ -532,8 +532,18 @@ function responseToRows(requestedFields, response) {
       var data = submissions;
       
       for (fieldName of arrayOfFields) {
-        data = convertData(data[fieldName], field.getType());
+        // this deals with groups: if we have nested groups this for loop
+        // will go to the very bottom of the raw data by following each level's group name.
+        if (fieldName in data) {
+           data = data[fieldName];
+        } else {
+           // if we are in this branch it means there are no fields of the fieldname
+           // in our data -- this will happen when user enters null data, so we
+           // just return null.
+           return row.push(null);
+        }
       }
+      data = convertData(data, field.getType()); // convert Odata to GDS data.
       return row.push(data);
     });
         
@@ -545,8 +555,12 @@ function responseToRows(requestedFields, response) {
 * This method makes adjustments to resolve mismatches between ODK datatypes and Google Data datatypes
 */
 function convertData(data, type) {
+  if (data === null) {
+    return null;
+  }
+      
   var types = cc.FieldType;
-
+  
   switch (type) {
     case types.YEAR_MONTH_DAY_HOUR:
       // ODK dateTime type
