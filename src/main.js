@@ -1,5 +1,5 @@
 /**
-* Copyright 2020 Pieter Benjamin, Naissan Noorassa, Hugh Sun, Ratik Koka
+* Copyright 2020 Pieter Benjamin, Naisan Noorassa, Hugh Sun, Ratik Koka
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 *
@@ -429,9 +429,7 @@ function testSchema(request) {
       '/fields'
     ];
   }
-  
-  
-  
+
   var response = UrlFetchApp.fetch(url.join(''), {
     method: 'GET',
     headers: {
@@ -530,6 +528,7 @@ function responseToRows(requestedFields, response) {
       var arrayOfFields = path.split('/'); // looks like ['student_info', 'name']
       
       var data = submissions;
+      var instanceId = submissions['__id'].split(":")[1];
       
       for (fieldName of arrayOfFields) {
         // this deals with groups: if we have nested groups this for loop
@@ -543,7 +542,7 @@ function responseToRows(requestedFields, response) {
            return row.push(null);
         }
       }
-      data = convertData(data, field.getType()); // convert Odata to GDS data.
+      data = convertData(data, field.getType(), instanceId); // convert Odata to GDS data.
       return row.push(data);
     });
         
@@ -553,35 +552,58 @@ function responseToRows(requestedFields, response) {
 
 /**
 * This method makes adjustments to resolve mismatches between ODK datatypes and Google Data datatypes
+* instanceId only necessary for generating URLs 
 */
-function convertData(data, type) {
+function convertData(data, type, instanceId = "") {
   if (data === null) {
     return null;
   }
-      
+
   var types = cc.FieldType;
   
   switch (type) {
+    case types.URL:
+      data = constructFileURL(data, instanceId);
+      break;
     case types.YEAR_MONTH_DAY_HOUR:
       // ODK dateTime type
       // Currently loses minutes field from ODK type -- alternatively we could convert to string
-      return data.replace(/[-T]/g, "").split(":")[0];
+      data = data.replace(/[-T]/g, "").split(":")[0];
+      break;
     case types.YEAR_MONTH_DAY:
       // ODK date type
-      return data.replace(/-/g, "");
+      data = data.replace(/-/g, "");
+      break;
     case types.LATITUDE_LONGITUDE:
       // data = {coordinates=[-122.335575, 47.655831, 0.0], properties={accuracy=0.0}, type=Point}
-      return data['coordinates'].slice(0, 2).join(', '); // "-122.335575, 47.655831"
+      data = data['coordinates'].slice(0, 2).join(', '); // "-122.335575, 47.655831"
+      break;
     case types.TEXT:
       // handles other non-text datatypes that don't have a good gds equivalent
       // eg. geoshape, geotrace
       if (data !== null && typeof data === "object" && "type" in data) {
-        return JSON.stringify(data);
+        data = JSON.stringify(data);
       }
-      return data;
-    default:
-      return data;
+      break;
   }
+
+  return data;
+}
+
+function constructFileURL(fileName, instanceID) {
+  var user = PropertiesService.getUserProperties();
+
+  return [
+    user.getProperty('dscc.path'),
+    'projects',
+    user.getProperty('projectId'),
+    'forms',
+    user.getProperty('xmlFormId'),
+    user.getProperty('table'),
+    'uuid%3A' + instanceID,
+    'attachments',
+    fileName,
+  ].join('/');
 }
 
 /**
@@ -603,11 +625,11 @@ function getData(request) {
   var user = PropertiesService.getUserProperties();
   user.setProperty('projectId', request.configParams.projectId);
   user.setProperty('xmlFormId', request.configParams.xmlFormId);
+  user.setProperty('table', request.configParams.table);
   
   var requestedFieldIds = request.fields.map(function(field) {
     return field.name;
   });
-
 
   var requestedFields = getFields().forIds(requestedFieldIds);
   if (debug) {
@@ -695,4 +717,3 @@ function getData(request) {
 function isAdminUser() {
   return true;
 }
-
