@@ -4,15 +4,15 @@ As of 11/17/20, our connector appears to be functional with the exception of rep
 Before reading further, please take a moment to consider your privacy concerns and read the blurb below about user data.  
 
 ## Editing the connector
-*Note: these steps may be out of date. If you encounter any issues, the specification provided from Google can be found [here](https://developers.google.com/datastudio/connector/build)*  
+*Note: these steps may be out of date. If you encounter any issues, the specification provided from Google can be found [here](https://developers.google.com/datastudio/connector/build). At the time of writing this file, the [apps script ide](https://workspaceupdates.googleblog.com/2020/12/google-apps-script-ide-better-code-editing.html) had just been updated, and our guide is designed for this UI.*  
 1. Fork this repository (or edit it in any other way you like)
 2. Head to https://www.google.com/script/start/  
 3. Click "start scripting" along the top bar
 4. Create a new project (along top bar)
 5. Copy `main.js` into `code.gs` (along with your changes)
-6. Go to view &rarr; show manifest file &rarr; copy `appscript.json`
+6. Go to project settings &rarr; show appsscript.json &rarr; copy `appscript.json`
 7. Save &rarr; publish &rarr; deploy from manifest &rarr; click on the datastudio.google.com link
-3. Using (see below)
+8. Using (see below)
 
 ## Using the connector
 
