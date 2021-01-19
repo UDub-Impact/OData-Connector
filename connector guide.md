@@ -4,7 +4,7 @@ As of 11/17/20, our connector appears to be functional with the exception of rep
 Before reading further, please take a moment to consider your privacy concerns and read the blurb below about user data.  
 
 ## Editing the connector
-
+*Note: these steps may be out of date. If you encounter any issues, the specification provided from Google can be found [here](https://developers.google.com/datastudio/connector/build)*  
 1. Fork this repository (or edit it in any other way you like)
 2. Head to https://www.google.com/script/start/  
 3. Click "start scripting" along the top bar
