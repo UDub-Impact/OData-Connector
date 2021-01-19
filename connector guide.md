@@ -11,7 +11,7 @@ Before reading further, please take a moment to consider your privacy concerns a
 4. Create a new project (along top bar)
 5. Copy `main.js` into `code.gs` (along with your changes)
 6. Go to project settings &rarr; show appsscript.json &rarr; copy `appscript.json`
-7. Save &rarr; publish &rarr; deploy from manifest &rarr; click on the datastudio.google.com link
+7. Create a [deployment](https://developers.google.com/datastudio/connector/deploy#create_separate_deployments) - Note that you will need to swap to the legacy editor for this.
 8. Using (see below)
 
 ## Using the connector
