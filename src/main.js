@@ -576,7 +576,9 @@ function convertData(data, type, instanceId = "") {
       break;
     case types.LATITUDE_LONGITUDE:
       // data = {coordinates=[-122.335575, 47.655831, 0.0], properties={accuracy=0.0}, type=Point}
-      data = data['coordinates'].slice(0, 2).join(', '); // "-122.335575, 47.655831"
+      // need .reverse() here because OData returns (Longitude, Latitude), and GDS expects
+      // (Latitude, Longitude)
+      data = data['coordinates'].slice(0, 2).reverse().join(', '); // "47.655831, -122.335575"
       break;
     case types.TEXT:
       // handles other non-text datatypes that don't have a good gds equivalent
