@@ -569,7 +569,7 @@ function responseToRows(requestedFields, response) {
       for (const fieldName of arrayOfFields) {
         // this deals with groups: if we have nested groups this for loop
         // will go to the very bottom of the raw data by following each level's group name.
-        if (fieldName in data) {
+        if (data !== null && fieldName in data) {
            data = data[fieldName];
         } else {
            // if we are in this branch it means there are no fields of the fieldname
