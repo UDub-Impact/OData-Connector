@@ -526,11 +526,13 @@ function responseToRows(requestedFields, response) {
       
       var path = field.getName(); // looks like "student_info/name"
       var arrayOfFields = path.split('/'); // looks like ['student_info', 'name']
+
+      arrayOfFields = handleGeoAccuracyField(arrayOfFields);
       
       var data = submissions;
       var instanceId = submissions['__id'].split(":")[1];
       
-      for (fieldName of arrayOfFields) {
+      for (const fieldName of arrayOfFields) {
         // this deals with groups: if we have nested groups this for loop
         // will go to the very bottom of the raw data by following each level's group name.
         if (fieldName in data) {
@@ -548,6 +550,33 @@ function responseToRows(requestedFields, response) {
         
     return { values: row };
   });
+}
+
+/**
+ * This function returns an array that tells us how to get the accuracy
+ * of a geo point from Odata database given the original array,
+ * if this array actually represents the accuracy data.
+ * 
+ * we know this array corresponds to accuracy of a geo point when the last
+ * string of input array contains '-accuracy' substring.
+ * 
+ * If the array is not about accruacy of a geo point, return the array as it is.
+ * @param {array} arrayOfFields ['group1', 'group2', 'Location-accuracy']
+ * @returns {array} ['group1', 'group2', 'Location', 'properties', 'accuracy']
+ */
+function handleGeoAccuracyField(arrayOfFields) {
+  if (arrayOfFields[arrayOfFields.length - 1].includes('-accuracy')) {
+    let index_last_ele = arrayOfFields.length - 1;
+    var field = arrayOfFields[index_last_ele] // "Location-accuracy" -> should make it "Location"
+    var indexOfAccuracy = field.indexOf('-accuracy');
+    field = field.substring(0, indexOfAccuracy);
+    arrayOfFields[index_last_ele] = field;
+    arrayOfFields.push('properties');
+    arrayOfFields.push('accuracy');
+    return arrayOfFields;
+  } else {
+    return arrayOfFields;
+  }
 }
 
 /**
