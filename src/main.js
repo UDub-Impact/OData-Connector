@@ -282,7 +282,8 @@ function getFields(request) {
   
   var cc = DataStudioApp.createCommunityConnector();
   var fields = cc.getFields();
-  
+  let types = cc.FieldType;
+
   var json = testSchema(request);
   
   // json: [{"path":"/student_info","name":"student_info","type":"structure","binary":null},
@@ -315,6 +316,14 @@ function getFields(request) {
       .setId(id.toString())
       .setName(nameOfField)
       .setType(dataType);
+      if (dataType === types.LATITUDE_LONGITUDE) {
+        // we want an extra accuracy column when getting geo data from ODATA.
+        id = id + 1;
+        fields.newMetric()
+        .setId(id.toString())
+        .setName(nameOfField + '-accuracy')
+        .setType(types.NUMBER);
+      }
     } else if (conceptType === 'metric') {
       fields.newMetric()
       .setId(id.toString())
