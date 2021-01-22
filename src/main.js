@@ -291,6 +291,9 @@ function getFields(request) {
   //        {"path":"/student_info/age","name":"age","type":"int","binary":null}]
   // an array of objects
   
+  // set submitterName and submissionDate fields
+  addSubmissionFields(fields);
+
   for (var i = 0; i < json.length; i++) {
     // json[i] is an object like {"path":"/student_info","name":"student_info","type":"structure","binary":null}
 
@@ -344,6 +347,28 @@ function getFields(request) {
   }
 
   return fields;
+}
+
+/**
+* Adds submitterName and submissionDate fields.
+* Represented as "__system/submitterName" and "__system/submissionDate"
+* Prefixing "__system" helps responseToRows get the correct data and
+* stops us from interfering with any user-defined fields.
+*/
+function addSubmissionFields(fields) {
+  var typesObj = getGDSType("string");
+  fields.newDimension()
+    .setId(id.toString())
+    .setName("__system/submitterName")
+    .setType(typesObj['dataType']);
+  id++;
+
+  typesObj = getGDSType("dateTime");
+  fields.newDimension()
+    .setId(id.toString())
+    .setName("__system/submissionDate")
+    .setType(typesObj['dataType']);
+  id++;
 }
 
 /**
