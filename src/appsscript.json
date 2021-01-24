@@ -16,9 +16,6 @@
     "addonUrl": "https://github.com/UDub-Impact/OData-Connector/blob/master/readme.md",
     "supportUrl": "https://github.com/googledatastudio/community-connectors/issues",
     "description": "Get your data from ODK central",
-    "sources": ["npm"],
-    "templates": {
-      "default": "1twu0sHjqR5dELAPyGJcw4GS3-D0_NTrQ"
-    }
+    "sources": ["npm"]
   }
 }
