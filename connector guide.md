@@ -4,13 +4,13 @@ As of 11/17/20, our connector appears to be functional with the exception of rep
 Before reading further, please take a moment to consider your privacy concerns and read the blurb below about user data.  
 
 ## Editing the connector
-*Note: these steps may be out of date. If you encounter any issues, the specification provided from Google can be found [here](https://developers.google.com/datastudio/connector/build). At the time of writing this file, the [apps script ide](https://workspaceupdates.googleblog.com/2020/12/google-apps-script-ide-better-code-editing.html) had just been updated, and our guide is designed for this UI.*  
+*Note: these steps may be out of date. If you encounter any issues, the specification provided from Google can be found [here](https://developers.google.com/datastudio/connector/build). At the time of writing this file, the [apps script ide](https://workspaceupdates.googleblog.com/2020/12/google-apps-script-ide-better-code-editing.html) had just been updated, and our guide is designed for what is now called the "legacy" editor.*  
 1. Fork this repository (or edit it in any other way you like)
 2. Head to https://www.google.com/script/start/  
 3. Click "start scripting" along the top bar
 4. Create a new project (along top bar)
 5. Copy `main.js` into `code.gs` (along with your changes)
-6. Go to project settings &rarr; show appsscript.json &rarr; copy `appscript.json`
+6. Go to view &rarr; show manifest file &rarr; copy `appscript.json` from our repository.
 7. Create a [deployment](https://developers.google.com/datastudio/connector/deploy#create_separate_deployments) - Note that you will need to swap to the legacy editor for this.
 8. Using (see below)
 
@@ -18,9 +18,10 @@ Before reading further, please take a moment to consider your privacy concerns a
 
 1. Have a form which you've uploaded to your instance of ODK Central, as well as some data you'd like to view in Google Data Studio.
 2. Create an account which has view-only privileges. This step is not strictly necessary, but Google will [use](https://support.google.com/datastudio/answer/9053467?hl=en) your login information, which users may have varying levels of comfort with.
-3. Using your form ID and the account you'd like google to be "aware" of, login to our connector [here](https://datastudio.google.com/u/0/datasources/create?connectorId=AKfycbwlLqb1ZWaB0mPpdfG8o-JhKv6BnPubbqL-VLg9cfA). Note that the url you input at login is *NOT* for your form, but for wherever your instance of ODK Central is hosted (for example: https://sandbox.central.getodk.org/v1)
-4. Fill out info for your form (minimal example below)
-5. Play with your data! Our tutorial ends here as we aren't GDS experts. Happy coding and let us know if you have any feedback!
+3. Deploy your connector (or  use the most recent version of ours [here](https://datastudio.google.com/u/0/datasources/create?connectorId=AKfycbwlLqb1ZWaB0mPpdfG8o-JhKv6BnPubbqL-VLg9cfA)) via publish &rarr; deploy from manifest &rarr; Latest Version (head) &rarr; click on the datastudio.google.com link
+4. Using the account you'd like google to be "aware" of, login to the connector. Note that the url you input at login is *NOT* for your form, but for wherever your instance of ODK Central is hosted (for example: https://sandbox.central.getodk.org/v1)
+5. Fill out info for your form (minimal example below)
+6. Play with your data! Our tutorial ends here as we aren't GDS experts. Happy coding and let us know if you have any feedback!
 
 ![minimal form](https://github.com/UDub-Impact/OData-Connector/blob/master/form.PNG)
 
