@@ -652,7 +652,18 @@ function responseToRows(requestedFields, response) {
     requestedFields.asArray().forEach(function (field) {
       
       var path = field.getName(); // looks like "student_info/name"
-      var arrayOfFields = path.split('/'); // looks like ['student_info', 'name']
+      if (debug) {
+        Logger.log('we are inside of requestedFields.asArray().forEach(function (field)');
+        Logger.log('and path = ');
+        Logger.log(path);
+      }
+      var arrayOfFields = path.split('/'); // looks like ['student_info', 'name'], or ['repeat1', 'q2'] (for repeat)
+      
+      // if this is from repeat data, need to trim the first element.
+      var user = PropertiesService.getUserProperties();
+      if (user.getProperty('table') !== 'Submissions') {
+        arrayOfFields = arrayOfFields.slice(1);
+      }
 
       arrayOfFields = handleGeoAccuracyField(arrayOfFields);
       
@@ -809,7 +820,7 @@ function getData(request) {
   var url = [
     request.configParams.URL,
     '/',
-    request.configParams.table
+    table
   ];
   
   if (debug) {
