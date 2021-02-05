@@ -230,48 +230,29 @@ function getConfig(request) {
   
   config.newInfo()
   .setId('Request Data')
-  .setText('Enter details for the Data you would like to access.');
+  .setText('Enter the URL (by clicking on Analyze via Odata) for the data you would like to access -- It can be the same URL as you entered in the first screen, or it can be a different URL.');
   
   config.newTextInput()
-  .setId('projectId')
-  .setName('Enter a Project Id')
-  .setHelpText('e.g. 124');
-  
-  config.newTextInput()
-  .setId('xmlFormId')
-  .setName('Enter a Form Id')
-  .setHelpText('e.g. odata connector scheme');
-  
-  config.newTextInput()
-  .setId('table')
-  .setName('Enter a Table Name')
-  .setHelpText('e.g. Submissions');
-  
-  config.newTextInput()
-  .setId('$skip')
-  .setName('Number of rows to skip (Optional)')
-  .setHelpText('e.g. 10');
-  
-  config.newTextInput()
-  .setId('$top')
-  .setName('Number of rows to display from the top (Optional)')
-  .setHelpText('e.g. 5');
-  
-  config.newSelectSingle()
-  .setId('$count')
-  .setName('Display Total Number of Rows')
-  .addOption(config.newOptionBuilder().setLabel('True').setValue('true'))
-  .addOption(config.newOptionBuilder().setLabel('False').setValue('false'));
-  
-  config.newSelectSingle()
-  .setId('$wkt')
-  .setName('Display GeoJSON as Well-Known Text')
-  .addOption(config.newOptionBuilder().setLabel('True').setValue('true'))
-  .addOption(config.newOptionBuilder().setLabel('False').setValue('false'));
+  .setId('URL')
+  .setName('Enter an URL to your data')
+  .setHelpText('e.g. https://sandbox.getodk.cloud/v1/projects/<projectID>/forms/<formID>.svc');
   
   return config.build();
 }
 
+/**
+ * @param {String} path A URL like https://sandbox.getodk.cloud/v1/projects/4/forms/all-data-except-file-uploads.svc
+ * @return {Array} An array of strings that stores information about the path - [base_url, project_id, form_id]
+ *                  e.g. ["https://sandbox.getodk.cloud/v1", "4", "all-data-except-file-uploads"]
+ */
+function parseURL(path) {
+  var parts_of_path = path.split("/");
+  var length = parts_of_path.length;
+  var base_URL = parts_of_path[0] + '//' + parts_of_path.slice(2, parts_of_path.length - 4).join('/');
+  var project_id = parts_of_path[length-3];
+  var form_id = parts_of_path[length-1].substr(0,parts_of_path[length-1].length - 4);
+  return [base_URL, project_id, form_id];
+}
 function getFields(request) {
   
   if (debug) {
@@ -454,12 +435,16 @@ function testSchema(request) {
       '/fields'
     ];
   } else {
+    var path_infos = parseURL(request.configParams.URL);
+    var projectId = path_infos[1];
+    var formId = path_infos[2];
+
     var url = [
       baseURL,
       '/projects/',
-      request.configParams.projectId,
+      projectId,
       '/forms/',
-      request.configParams.xmlFormId,
+      formId,
       '/fields'
     ];
   }
@@ -687,10 +672,14 @@ function getData(request) {
     Logger.log(request);
   }
   
+  var path_infos = parseURL(request.configParams.URL);
+  var projectId = path_infos[1];
+  var formId = path_infos[2];
+
   var user = PropertiesService.getUserProperties();
-  user.setProperty('projectId', request.configParams.projectId);
-  user.setProperty('xmlFormId', request.configParams.xmlFormId);
-  user.setProperty('table', request.configParams.table);
+  user.setProperty('projectId', projectId);
+  user.setProperty('xmlFormId', formId);
+  user.setProperty('table', "Submissions"); // TODO: change this later
   
   var requestedFieldIds = request.fields.map(function(field) {
     return field.name;
@@ -709,21 +698,8 @@ function getData(request) {
   var baseURL = user.getProperty('dscc.path');  // example: 'https://sandbox.central.getodk.org/v1'
   
   var url = [
-    baseURL,
-    '/projects/',
-    request.configParams.projectId,
-    '/forms/',
-    request.configParams.xmlFormId,
-    '.svc/',
-    request.configParams.table,
-    '?%24skip=',
-    request.configParams.$skip,
-    '&%24top=',
-    request.configParams.$top,
-    '&%24count=',
-    request.configParams.$count,
-    '&%24wkt=',
-    request.configParams.$wkt
+    request.configParams.URL,
+    '/Submissions' // TODO: change this later.
   ];
   
   if (debug) {
