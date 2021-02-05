@@ -12,6 +12,7 @@
 var cc = DataStudioApp.createCommunityConnector();
 var id = 0;
 var debug = false;
+let UNIQUE_SEPERATOR = "MY_SEPERATOR"; // for joining an array into a string, and parsing that string apart. Using this string because user might have ' ', '/' in their data schemas.
 
 /**
 * This method returns the authentication method we are going to use
@@ -226,7 +227,13 @@ function setToken() {
 * @return {object} A JavaScript object representing the config for the given request.
 */
 function getConfig(request) {
+  var configParams = request.configParams;
+  var isFirstRequest = configParams === undefined;
   var config = cc.getConfig();
+  if (isFirstRequest) {
+    config.setIsSteppedConfig(true);
+  }
+
   
   config.newInfo()
   .setId('Request Data')
@@ -235,9 +242,61 @@ function getConfig(request) {
   config.newTextInput()
   .setId('URL')
   .setName('Enter an URL to your data')
-  .setHelpText('e.g. https://sandbox.getodk.cloud/v1/projects/<projectID>/forms/<formID>.svc');
-  
+  .setHelpText('e.g. https://sandbox.getodk.cloud/v1/projects/<projectID>/forms/<formID>.svc')
+  .setIsDynamic(true);
+
+  if (!isFirstRequest) {
+    var table = config.newSelectSingle()
+        .setId("table")
+        .setName("Table");
+    var tableOptions = getAvailableTablesFromURL(configParams.URL);
+    tableOptions.forEach(function(labelAndValue) {
+      var tableLabel = labelAndValue[0];
+      var tableValue = labelAndValue[1];
+      table.addOption(config.newOptionBuilder().setLabel(tableLabel).setValue(tableValue));
+    });
+  }
   return config.build();
+}
+
+function getAvailableTablesFromURL(URL) {
+  // get another response based on the new token
+  var user = PropertiesService.getUserProperties();
+  var response = UrlFetchApp.fetch(URL, {
+    method: 'GET',
+    headers: {
+      'Authorization': 'Bearer ' + user.getProperty('dscc.token')
+    },
+    muteHttpExceptions: true
+  });
+  
+  if (response.getResponseCode() !== 200) {
+    cc.newUserError()
+    .setText("You have entered an invalid URL.")
+    .setDebugText("User has entered an invalid URL. API request to get table names failed.")
+    .throwException();
+  }
+  
+  var responseJson = JSON.parse(response);
+  
+  /** json looks like following:
+  {
+    "@odata.context": "https://sandbox.getodk.cloud/v1/projects/4/forms/groups%20schema.svc/$metadata",
+    "value": [{
+        "name": "Submissions",
+        "kind": "EntitySet",
+        "url": "Submissions"
+    }]
+  }
+  **/
+  var tables = [];
+  var tableNames = [];
+  for (const table_info of responseJson['value']) {
+    tableNames.push(table_info['name']);
+    tables.push([table_info['name'], table_info['name']]);
+  }
+  user.setProperty('tableNames', tableNames.join(UNIQUE_SEPERATOR));
+  return tables;
 }
 
 /**
@@ -253,7 +312,18 @@ function parseURL(path) {
   var form_id = parts_of_path[length-1].substr(0,parts_of_path[length-1].length - 4);
   return [base_URL, project_id, form_id];
 }
+
+function isTableInTableNames(tableNames, table) {
+  for (const possibleTableName of tableNames) {
+    if (possibleTableName === table) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function getFields(request) {
+  var user = PropertiesService.getUserProperties();
   
   if (debug) {
     Logger.log('we are inside of getFields() function.');
@@ -266,23 +336,57 @@ function getFields(request) {
   let types = cc.FieldType;
 
   var json = testSchema(request);
-  
-  // json: [{"path":"/student_info","name":"student_info","type":"structure","binary":null},
-  //        {"path":"/student_info/name","name":"name","type":"string","binary":null},
-  //        {"path":"/student_info/age","name":"age","type":"int","binary":null}]
-  // an array of objects
+  // request = {configParams={URL=https://sandbox.getodk.cloud/v1/projects/4/forms/groups%20schema.svc, table=Submissions}}
+  var userRequestedTable = user.getProperty('table');
+  // json looks like:
+  //  [{
+  //    "path": "/q1",
+  //    "name": "q1",
+  //    "type": "string",
+  //    "binary": null
+  //}, {
+  //    "path": "/repeat1",
+  //    "name": "repeat1",
+  //    "type": "repeat",
+  //    "binary": null
+  //}, {
+  //    "path": "/repeat1/q2",
+  //    "name": "q2",
+  //    "type": "string",
+  //    "binary": null
   
   // set submitterName and submissionDate fields
-  addSubmissionFields(fields);
-
+//  addSubmissionFields(fields); // TODO.
+  var tableNames = user.getProperty('tableNames').split(UNIQUE_SEPERATOR);
+  // tableNames = [ 'Submissions', 'Submissions/repeat1', 'Submissions/repeat2' ]
+  tableNames = tableNames.filter(e => e !== 'Submissions')
+  // tableNames = [ 'Submissions/repeat1', 'Submissions/repeat2' ]
+  for (var i = 0; i < tableNames.length; i++) {
+    tableNames[i] = tableNames[i].substr(12);
+  }
+  // tableNames = [ 'repeat1', 'repeat2' ]
+  
   for (var i = 0; i < json.length; i++) {
     // json[i] is an object like {"path":"/student_info","name":"student_info","type":"structure","binary":null}
 
     var ODataType = json[i]['type'];
 
     // disregard the meta data schema
-    if (ODataType === 'structure' ||  json[i]['name'] === 'instanceID') {
+    if (ODataType === 'structure' ||  json[i]['name'] === 'instanceID' || ODataType === 'repeat') {
       continue;
+    }
+    
+    // we only want the schema for the table user asks for.
+    // TODO
+    var schemaTableName = json[i]['path'].split('/')[1];
+    if (userRequestedTable === 'Submissions') {
+      if (isTableInTableNames(tableNames, schemaTableName)) {
+        continue;
+      }
+    } else {
+      if (schemaTableName !== userRequestedTable.substr(12)) {
+        continue;
+      }
     }
 
     var typesObj = getGDSType(ODataType);
@@ -438,7 +542,7 @@ function testSchema(request) {
     var path_infos = parseURL(request.configParams.URL);
     var projectId = path_infos[1];
     var formId = path_infos[2];
-
+    
     var url = [
       baseURL,
       '/projects/',
@@ -496,10 +600,14 @@ function testSchema(request) {
 *
 */
 function getSchema(request) {
-  
   if (debug) {
     Logger.log('we are in getSchema(), with request parameter of:');
     Logger.log(request);
+  }
+  
+  if (request !== undefined) {
+    var user = PropertiesService.getUserProperties();
+    user.setProperty('table', request.configParams.table);
   }
   
   var fieldsBeforeBuilding = getFields(request);
@@ -675,11 +783,12 @@ function getData(request) {
   var path_infos = parseURL(request.configParams.URL);
   var projectId = path_infos[1];
   var formId = path_infos[2];
+  var table = request.configParams.table;
 
   var user = PropertiesService.getUserProperties();
   user.setProperty('projectId', projectId);
   user.setProperty('xmlFormId', formId);
-  user.setProperty('table', "Submissions"); // TODO: change this later
+  user.setProperty('table', table);
   
   var requestedFieldIds = request.fields.map(function(field) {
     return field.name;
@@ -699,7 +808,8 @@ function getData(request) {
   
   var url = [
     request.configParams.URL,
-    '/Submissions' // TODO: change this later.
+    '/',
+    request.configParams.table
   ];
   
   if (debug) {
