@@ -30,8 +30,8 @@ function getAuthType() {
   return cc.newAuthTypeResponse()
   // PATH_USER_PASS indicate we want to use user + password + a URL path
   // to user's server for authentication
-  .setAuthType(cc.AuthType.PATH_USER_PASS) 
-  .setHelpUrl('https://www.example.org/connector-auth-help')
+  .setAuthType(cc.AuthType.PATH_USER_PASS)
+  .setHelpUrl('https://docs.getodk.org/central-submissions/#connecting-to-submission-data-over-odata')
   .build();
 }
 
@@ -98,6 +98,7 @@ function setCredentials(request) {
 * @returns {boolean} whether the username + password + path are correct
 */
 function validateAndStoreCredentials(username, password, path) {
+  path = parseURL(path)[0];
   var properties = PropertiesService.getUserProperties();
   var token = properties.getProperty('dscc.token');
   if (token !== null) {
@@ -271,6 +272,20 @@ function getAvailableTablesFromURL(URL) {
   });
   
   if (response.getResponseCode() !== 200) {
+    // this means response is not good, which potentially means token expired.
+    // reset property's token to be a new token.
+    setToken();
+    // get another response based on the new token
+    response = UrlFetchApp.fetch(URL, {
+      method: 'GET',
+      headers: {
+        'Authorization': 'Bearer ' + user.getProperty('dscc.token')
+      },
+      muteHttpExceptions: true
+    });
+  }
+
+  if (response.getResponseCode() !== 200) {
     cc.newUserError()
     .setText("You have entered an invalid URL.")
     .setDebugText("User has entered an invalid URL. API request to get table names failed.")
@@ -356,7 +371,7 @@ function getFields(request) {
   //    "binary": null
   
   // set submitterName and submissionDate fields
-//  addSubmissionFields(fields); // TODO.
+  addSubmissionFields(fields);
   var tableNames = user.getProperty('tableNames').split(UNIQUE_SEPERATOR);
   // tableNames = [ 'Submissions', 'Submissions/repeat1', 'Submissions/repeat2' ]
   tableNames = tableNames.filter(e => e !== 'Submissions')
@@ -377,7 +392,6 @@ function getFields(request) {
     }
     
     // we only want the schema for the table user asks for.
-    // TODO
     var schemaTableName = json[i]['path'].split('/')[1];
     if (userRequestedTable === 'Submissions') {
       if (isTableInTableNames(tableNames, schemaTableName)) {
