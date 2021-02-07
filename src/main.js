@@ -370,8 +370,14 @@ function getFields(request) {
   //    "type": "string",
   //    "binary": null
   
-  // set submitterName and submissionDate fields
-  addSubmissionFields(fields);
+  // add submitterName, submissionDate, and __id fields for submissions
+  // add __Submissions-id field for repeats
+  if (userRequestedTable === "Submissions") {
+    addSubmissionFields(fields);
+  } else {
+    addRepeatFields(fields, userRequestedTable);
+  }
+
   var tableNames = user.getProperty('tableNames').split(UNIQUE_SEPERATOR);
   // tableNames = [ 'Submissions', 'Submissions/repeat1', 'Submissions/repeat2' ]
   tableNames = tableNames.filter(e => e !== 'Submissions')
@@ -380,7 +386,7 @@ function getFields(request) {
     tableNames[i] = tableNames[i].substr(12);
   }
   // tableNames = [ 'repeat1', 'repeat2' ]
-  
+
   for (var i = 0; i < json.length; i++) {
     // json[i] is an object like {"path":"/student_info","name":"student_info","type":"structure","binary":null}
 
@@ -449,10 +455,9 @@ function getFields(request) {
 }
 
 /**
-* Adds submitterName and submissionDate fields.
+* Adds submitterName, submissionDate, and __id fields.
 * Represented as "__system/submitterName" and "__system/submissionDate"
-* Prefixing "__system" helps responseToRows get the correct data and
-* stops us from interfering with any user-defined fields.
+* Prefixing "__system" so that responseToRows correctly navigates JSON to find data
 */
 function addSubmissionFields(fields) {
   var typesObj = getGDSType("string");
@@ -462,10 +467,31 @@ function addSubmissionFields(fields) {
     .setType(typesObj['dataType']);
   id++;
 
+  fields.newDimension()
+    .setId(id.toString())
+    .setName("__id")
+    .setType(typesObj['dataType']);
+  id++;
+
   typesObj = getGDSType("dateTime");
   fields.newDimension()
     .setId(id.toString())
     .setName("__system/submissionDate")
+    .setType(typesObj['dataType']);
+  id++;
+}
+
+/**
+* Adds "{repeat name}/__Submissions-id" field
+ * This should help users associate repeat data with Submissions data
+ * Prefixing "{repeat name}" so that responseToRows correctly navigates JSON to find data
+*/
+function addRepeatFields(fields, table) {
+  table = table.split(".").slice(1).join("/");
+  var typesObj = getGDSType("string");
+  fields.newDimension()
+    .setId(id.toString())
+    .setName(table + "/__Submissions-id")
     .setType(typesObj['dataType']);
   id++;
 }
