@@ -33,6 +33,14 @@ Before reading further, please take a moment to consider your privacy concerns a
 ## Google Data Studio
 We ask that before you use our connector, you take a moment to think about any privacy concerns associated with your data. [GDS](https://developers.google.com/datastudio) is a data visualization tool which is capable of working with any data sources accessible via the internet. There is an [existing ecosystem](https://datastudio.google.com/data) of community connectors, which is where we received our inspiration to create one for ODK central. It is important to note that since it will travel over the internet *your data will be "seen" (likely in encrypted form) by many networks and routers along the way*. HTTPS is, of course, very powerful and enables use of the internet for transmission extremely sensitive user information. However each use case is different, and we can't decide for you whether your security concerns are met.
 
+## Example visualizaing the GEO data
+At the google data studio report/exploration page, 
+1. Add your geo data field into the *Dimension* column.
+2. add another numeric field of your choosing to the *Metric* column.
+3. In the chart section of GDS, select "Bubble Map". An map with points on it should appear, like the image below.
+
+![map](map.png)
+
 ## Converting ODK datatypes to GDS datatypes
 Most ODK datatypes have fairly natural GDS equivalents. However, there are some complications when converting certain datatypes, which are documented below.
 
