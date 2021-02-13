@@ -22,11 +22,13 @@ Before reading further, please take a moment to consider your privacy concerns a
 4. Using the account you'd like google to be "aware" of, login to the connector. In the Path text box, please copy the URL link to your form, as described [here](https://docs.getodk.org/central-submissions/#connecting-to-submission-data-over-odata) (e.g. https://sandbox.getodk.cloud/v1/projects/4/forms/two-repeats.svc)
 5. Once you've logged in, there will be a second configuration screen. You will need to copy the URL you entered in the first screen again to the text box in the second screen. Later you can come back to change the URL to another form you want to analyze over.
 6. Click on NEXT.
-7. Now another field should appear that says "Table".
+7. Now another field should appear that says "Table". (see an example image below)
 8. Click on the triangle in the "Table" field and a dropdown menu would appear. Select the repeat/Submissions table you want to access.
 9. Click on CONNECT.
 10. Make sure the types of your data are corrected. If they are not what you expect, you can manually change them.
 11. Create a report and play with your data! Our tutorial ends here as we aren't GDS experts. Happy coding and let us know if you have any feedback!
+
+![second configuration screen example](configuration.png)
 
 ## Google Data Studio
 We ask that before you use our connector, you take a moment to think about any privacy concerns associated with your data. [GDS](https://developers.google.com/datastudio) is a data visualization tool which is capable of working with any data sources accessible via the internet. There is an [existing ecosystem](https://datastudio.google.com/data) of community connectors, which is where we received our inspiration to create one for ODK central. It is important to note that since it will travel over the internet *your data will be "seen" (likely in encrypted form) by many networks and routers along the way*. HTTPS is, of course, very powerful and enables use of the internet for transmission extremely sensitive user information. However each use case is different, and we can't decide for you whether your security concerns are met.
