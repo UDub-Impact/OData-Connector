@@ -41,6 +41,10 @@ At the google data studio report/exploration page,
 
 ![map](map.png)
 
+## How to rename your data source
+In the first authentication screen or the second configuration screen, at the top left corner of the screen and you should see the name of your connector displayed as "Untitled Data Source", as shown below. If you hover over that and click on the name, it will give you the chance to rename this data source to something more meaningful, for example "odata-my-form".
+![rename data source](rename_data_source.png)
+
 ## Converting ODK datatypes to GDS datatypes
 Most ODK datatypes have fairly natural GDS equivalents. However, there are some complications when converting certain datatypes, which are documented below.
 
