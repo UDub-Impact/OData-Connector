@@ -15,7 +15,7 @@
     "companyUrl": "https://sites.google.com/view/udubimpact",
     "addonUrl": "https://github.com/UDub-Impact/OData-Connector/blob/master/readme.md",
     "supportUrl": "https://github.com/googledatastudio/community-connectors/issues",
-    "description": "Get your data from ODK central",
+    "description": "Get your data from ODK Central",
     "sources": ["ODK_CENTRAL"]
   }
 }
