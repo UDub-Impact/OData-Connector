@@ -263,13 +263,22 @@ function getConfig(request) {
 function getAvailableTablesFromURL(URL) {
   // get another response based on the new token
   var user = PropertiesService.getUserProperties();
-  var response = UrlFetchApp.fetch(URL, {
-    method: 'GET',
-    headers: {
-      'Authorization': 'Bearer ' + user.getProperty('dscc.token')
-    },
-    muteHttpExceptions: true
-  });
+  var response;
+  try {
+    response = UrlFetchApp.fetch(URL, {
+      method: 'GET',
+      headers: {
+        'Authorization': 'Bearer ' + user.getProperty('dscc.token')
+      },
+      muteHttpExceptions: true
+    });
+  } catch (error) {
+    cc.newUserError()
+    .setText("You have entered an invalid URL.")
+    .setDebugText("User has entered an invalid URL. API request to get table names failed.")
+    .throwException();
+  }
+  
   
   if (response.getResponseCode() !== 200) {
     // this means response is not good, which potentially means token expired.
@@ -292,7 +301,15 @@ function getAvailableTablesFromURL(URL) {
     .throwException();
   }
   
-  var responseJson = JSON.parse(response);
+  var responseJson;
+  try {
+    responseJson = JSON.parse(response);
+  } catch (error) {
+    cc.newUserError()
+    .setText("bad URL request, please enter the correct URL to your data")
+    .setDebugText("User has entered an invalid URL. API request to get table names failed.")
+    .throwException();
+  }
   
   /** json looks like following:
   {
