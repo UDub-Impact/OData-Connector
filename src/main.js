@@ -725,7 +725,14 @@ function responseToRows(requestedFields, response) {
       arrayOfFields = handleGeoAccuracyField(arrayOfFields);
       
       var data = submissions;
-      var instanceId = submissions['__id'].split(":")[1];
+      
+      // the instanceId is named differently for repeat tables than for the submission table
+      var instanceId;
+      if (user.getProperty('table') === 'Submissions') {
+        instanceId = submissions['__id'].split(":")[1];
+      } else {
+        instanceId = submissions['__Submissions-id'].split(":")[1];
+      }
       
       for (const fieldName of arrayOfFields) {
         // this deals with groups: if we have nested groups this for loop
@@ -825,7 +832,7 @@ function constructFileURL(fileName, instanceID) {
     user.getProperty('projectId'),
     'forms',
     user.getProperty('xmlFormId'),
-    user.getProperty('table'),
+    'Submissions',
     'uuid%3A' + instanceID,
     'attachments',
     fileName,
