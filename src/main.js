@@ -698,6 +698,7 @@ function responseToRows(requestedFields, response) {
     Logger.log(response);
   }
 
+  requestedFields = requestedFields.asArray();
   let user = PropertiesService.getUserProperties();
   let isSubmissions = user.getProperty('table') === "Submissions";
 
@@ -717,11 +718,11 @@ function responseToRows(requestedFields, response) {
     }
 
     let row = [];
-    requestedFields.asArray().forEach(function(field) {
+    requestedFields.forEach(function(field) {
 
       let fieldPath = field.getName(); // looks like "student_info/name"
       if (debug) {
-        Logger.log('we are inside of requestedFields.asArray().forEach(function (field)');
+        Logger.log('we are inside of requestedFields.forEach(function (field)');
         Logger.log('and path = ');
         Logger.log(path);
       }
