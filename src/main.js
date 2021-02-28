@@ -698,86 +698,77 @@ function responseToRows(requestedFields, response) {
     Logger.log(response);
   }
 
+  let user = PropertiesService.getUserProperties();
+  let isSubmissions = user.getProperty('table') === "Submissions";
+
   return response.map(function(submissions) {
     if (debug) {
       Logger.log('we are inside of responseToRows/response.map function');
       Logger.log('and submissions variable looks like:');
       Logger.log(submissions);
     }
-  
-    var row = [];
-    requestedFields.asArray().forEach(function (field) {
-      
-      var path = field.getName(); // looks like "student_info/name"
+
+    // the instanceId is named differently for repeat tables than for the submission table
+    let instanceID;
+    if (isSubmissions) {
+      instanceID = submissions['__id'].split(":")[1];
+    } else {
+      instanceID = submissions['__Submissions-id'].split(":")[1];
+    }
+
+    let row = [];
+    requestedFields.asArray().forEach(function(field) {
+
+      let fieldPath = field.getName(); // looks like "student_info/name"
       if (debug) {
         Logger.log('we are inside of requestedFields.asArray().forEach(function (field)');
         Logger.log('and path = ');
         Logger.log(path);
       }
-      var arrayOfFields = path.split('/'); // looks like ['student_info', 'name'], or ['repeat1', 'q2'] (for repeat)
-      
+      let splitPath = fieldPath.split('/'); // looks like ['student_info', 'name'], or ['repeat1', 'q2'] (for repeat)
+
       // if this is from repeat data, need to trim the first element.
-      var user = PropertiesService.getUserProperties();
-      if (user.getProperty('table') !== 'Submissions') {
-        arrayOfFields = arrayOfFields.slice(1);
+      if (!isSubmissions) {
+        splitPath.shift();
       }
 
-      arrayOfFields = handleGeoAccuracyField(arrayOfFields);
-      
-      var data = submissions;
-      
-      // the instanceId is named differently for repeat tables than for the submission table
-      var instanceId;
-      if (user.getProperty('table') === 'Submissions') {
-        instanceId = submissions['__id'].split(":")[1];
-      } else {
-        instanceId = submissions['__Submissions-id'].split(":")[1];
-      }
-      
-      for (const fieldName of arrayOfFields) {
+      handleGeoAccuracyField(splitPath);
+      let fieldData = submissions;
+
+      for (const fieldName of splitPath) {
         // this deals with groups: if we have nested groups this for loop
         // will go to the very bottom of the raw data by following each level's group name.
-        if (data !== null && fieldName in data) {
-           data = data[fieldName];
-        } else {
-           // if we are in this branch it means there are no fields of the fieldname
-           // in our data -- this will happen when user enters null data, so we
-           // just return null.
-           return row.push(null);
+        if (fieldData !== null && fieldName in fieldData) {
+           fieldData = fieldData[fieldName];
         }
       }
-      data = convertData(data, field.getType(), instanceId); // convert Odata to GDS data.
-      return row.push(data);
+
+      fieldData = convertData(fieldData, field.getType(), instanceID); // convert Odata to GDS data.
+      row.push(fieldData);
     });
-        
+
     return { values: row };
   });
 }
 
 /**
- * This function returns an array that tells us how to get the accuracy
- * of a geo point from Odata database given the original array,
+ * This function adjusts the passed array to tell us how to get the
+ * accuracy of a geo point from Odata database given the original array,
  * if this array actually represents the accuracy data.
  * 
  * we know this array corresponds to accuracy of a geo point when the last
  * string of input array contains '-accuracy' substring.
  * 
- * If the array is not about accruacy of a geo point, return the array as it is.
- * @param {array} arrayOfFields ['group1', 'group2', 'Location-accuracy']
+ * If the array is not about accuracy of a geo point, it is not adjusted.
+ * @param {array} splitPath ['group1', 'group2', 'Location-accuracy']
  * @returns {array} ['group1', 'group2', 'Location', 'properties', 'accuracy']
  */
-function handleGeoAccuracyField(arrayOfFields) {
-  if (arrayOfFields[arrayOfFields.length - 1].includes('-accuracy')) {
-    let index_last_ele = arrayOfFields.length - 1;
-    var field = arrayOfFields[index_last_ele] // "Location-accuracy" -> should make it "Location"
-    var indexOfAccuracy = field.indexOf('-accuracy');
-    field = field.substring(0, indexOfAccuracy);
-    arrayOfFields[index_last_ele] = field;
-    arrayOfFields.push('properties');
-    arrayOfFields.push('accuracy');
-    return arrayOfFields;
-  } else {
-    return arrayOfFields;
+function handleGeoAccuracyField(splitPath) {
+  let i = splitPath.length - 1;
+  if (splitPath[i].includes('-accuracy')) {
+    splitPath[i] = splitPath[i].slice(0, -9); // remove "-accuracy"
+    splitPath.push('properties');
+    splitPath.push('accuracy');
   }
 }
 
@@ -885,45 +876,55 @@ function getData(request) {
     request.configParams.URL,
     '/',
     table
-  ];
+  ].join('');
   
   if (debug) {
     Logger.log('url is');
     Logger.log(url);
   }
+
   
-  var response = UrlFetchApp.fetch(url.join(''), {
+  // For some larger forms, UrlFetchApp seems to truncate the JSON returned to us by ODK
+  // To handle this, we use the $skip and $top parameters in our request(s) to grab data in chunks.
+  var mergedJSON = [];
+  var parsedJSON;
+  skip = 0;
+  top = 50000;
+  request_params = {
     method: 'GET',
     headers: {
       'contentType' : 'application/json',
       'Authorization': 'Bearer ' + user.getProperty('dscc.token')
     },
     muteHttpExceptions: true
-  });
-  
-  if (response.getResponseCode() !== 200) {
-    // this means response is not good, which means token expired.
-    // reset property's token to be a new token.
-    setToken();
-    // get another response based on the new token
-    response = UrlFetchApp.fetch(url.join(''), {
-      method: 'GET',
-      headers: {
-        'contentType' : 'application/json',
-        'Authorization': 'Bearer ' + user.getProperty('dscc.token')
-      },
-      muteHttpExceptions: true
-    });
   }
-  
-  var parsedResponse = JSON.parse(response).value;
-  var rows = responseToRows(requestedFields, parsedResponse);
-  
+
+  do {
+    formatted_url = url + "?%24skip=" + skip + "&%24top=" + top;
+    var response = UrlFetchApp.fetch(formatted_url, request_params);
+
+    if (response.getResponseCode() !== 200) {
+      // this means response is not good, which means token expired.
+      // reset property's token to be a new token.
+      setToken();
+      // get another response based on the new token
+      response = UrlFetchApp.fetch(formatted_url, request_params);
+    }
+
+    parsedJSON = JSON.parse(response.getContentText()).value;
+    mergedJSON.push(...parsedJSON);
+
+    skip += 50000;
+    top += 50000;
+  } while(parsedJSON.length != 0);
+
+  rows = responseToRows(requestedFields, mergedJSON);
+
   if (debug) {
     Logger.log('before we exit getData(), rows are:');
     Logger.log(rows);
   }
-  
+
   return {
     schema: requestedFields.build(),
     rows: rows
