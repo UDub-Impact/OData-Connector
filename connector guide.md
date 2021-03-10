@@ -52,3 +52,6 @@ Most ODK datatypes have fairly natural GDS equivalents. However, there are some 
 2. ODK's dateTime type is converted to GDS's YEAR_MONTH_DAY_HOUR type, which means that the minutes field is lost.
 3. ODK's geopoint type is converted to GDS's LATITUDE_LONGITUDE type. Accuracy field from Odata is added as another numeric column in GDS. Elevation field is lost in GDS.
 4. ODK's geoshape and geotrace types are currently converted to a TEXT representation in GDS. This may be changed to a group of associated LATITUDE_LONGITUDE points in the future.
+
+## Performance issues accessing forms with many submissions
+There are known performance issues with the connector when accessing upwards of ~50,000 rows of an ODK form. This is caused by overhead related to converting data from the format ODK provides to the format that GDS requires. As a result, requests for over 50,000 rows might take several minutes or fail altogether. To handle this issue, we allow users to specify the max number of rows that they want to access from their dataset, which means that parts of large forms can still be accessed. Users should also consider how requests for many rows of larger forms might impact the performance or bandwidth of the server they are requesting data from.
