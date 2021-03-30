@@ -24,9 +24,11 @@ Before reading further, please take a moment to consider your privacy concerns a
 6. Click on NEXT.
 7. Now another field should appear that says "Table". (see an example image below)
 8. Click on the triangle in the "Table" field and a dropdown menu would appear. Select the repeat/Submissions table you want to access.
-9. Click on CONNECT.
-10. Make sure the types of your data are corrected. If they are not what you expect, you can manually change them.
-11. Create a report and play with your data! Our tutorial ends here as we aren't GDS experts. Happy coding and let us know if you have any feedback!
+9. Click on NEXT.
+10. Now you will see the number of rows in this table, and you need to input the starting row and number of rows you want to access. (This connector is only built for visualizing small amount of data. And note that if number of rows you want to access is around 50,000, it will take a couple minutes to visualize your data.) (**Note: starting row parameter is 0-indexed. i.e. if you want to access the entire dataset, your start will be 0, and number of rows should be length of dataset.**)
+11. Click on CONNECT.
+12. Make sure the types of your data are corrected. If they are not what you expect, you can manually change them.
+13. Create a report and play with your data! Our tutorial ends here as we aren't GDS experts. Happy coding and let us know if you have any feedback!
 
 ![second configuration screen example](configuration.png)
 
