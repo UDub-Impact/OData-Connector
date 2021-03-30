@@ -230,6 +230,7 @@ function setToken() {
 function getConfig(request) {
   var configParams = request.configParams;
   var isFirstRequest = configParams === undefined;
+  var isSecondRequest = configParams !== undefined && configParams.table !== undefined;
   var config = cc.getConfig();
   if (isFirstRequest) {
     config.setIsSteppedConfig(true);
@@ -249,7 +250,9 @@ function getConfig(request) {
   if (!isFirstRequest) {
     var table = config.newSelectSingle()
         .setId("table")
-        .setName("Table");
+        .setName("Table")
+        .setIsDynamic(true);
+    config.setIsSteppedConfig(true);
     var tableOptions = getAvailableTablesFromURL(configParams.URL);
     tableOptions.forEach(function(labelAndValue) {
       var tableLabel = labelAndValue[0];
@@ -257,7 +260,77 @@ function getConfig(request) {
       table.addOption(config.newOptionBuilder().setLabel(tableLabel).setValue(tableValue));
     });
   }
+  if (isSecondRequest) {
+    var numberOfRows = getNumberOfRowsInTable(configParams.URL, configParams.table);
+    config.newInfo()
+    .setId('number of rows')
+    .setText('there are ' + numberOfRows + ' rows in this table');
+    config.newTextInput()
+    .setId('startingRow')
+    .setName('Enter the starting row that you want to access (please enter a non negative integer)');
+    config.newTextInput()
+    .setId('numberOfRowsToAccess')
+    .setName('Enter number of rows you want to access (please enter a non negative integer)');  
+    config.setIsSteppedConfig(false);
+  }
+  
   return config.build();
+}
+
+// number_string = "123" -> returns true
+// number_string = "abc" -> returns false
+function isNonNegativeInteger(str) {
+    var n = Math.floor(Number(str));
+    return n !== Infinity && String(n) === str && n >= 0;
+}
+
+function getNumberOfRowsInTable(URL, tableName) {
+  var user = PropertiesService.getUserProperties();
+  if (debug) {
+    Logger.log('URL:' + URL);
+    Logger.log('tableName:' + tableName);
+  }
+  var URLs = [URL, '/', tableName, '?%24top=1&%24count=true'];
+  var response;
+  try {
+    response = UrlFetchApp.fetch(URLs.join(''), {
+      method: 'GET',
+      headers: {
+        'Authorization': 'Bearer ' + user.getProperty('dscc.token')
+      },
+      muteHttpExceptions: true
+    });
+  } catch (error) {
+    cc.newUserError()
+    .setText("something is wrong with the URL")
+    .setDebugText("something is wrong with the URL")
+    .throwException();
+  }
+  
+  if (response.getResponseCode() !== 200) {
+    // this means response is not good, which potentially means token expired.
+    // reset property's token to be a new token.
+    setToken();
+    // get another response based on the new token
+    response = UrlFetchApp.fetch(URL, {
+      method: 'GET',
+      headers: {
+        'Authorization': 'Bearer ' + user.getProperty('dscc.token')
+      },
+      muteHttpExceptions: true
+    });
+  }
+  
+  var responseJson;
+  try {
+    responseJson = JSON.parse(response);
+  } catch (error) {
+    cc.newUserError()
+    .setText("bad URL request")
+    .setDebugText("bad URL request")
+    .throwException();
+  }
+  return responseJson['@odata.count'];
 }
 
 function getAvailableTablesFromURL(URL) {
@@ -665,6 +738,14 @@ function getSchema(request) {
   if (request !== undefined) {
     var user = PropertiesService.getUserProperties();
     user.setProperty('table', request.configParams.table);
+    user.setProperty('numberOfRowsToAccess', request.configParams.numberOfRowsToAccess);
+    user.setProperty('startingRow', request.configParams.startingRow);
+    if (!isNonNegativeInteger(request.configParams.numberOfRowsToAccess) || !isNonNegativeInteger(request.configParams.startingRow)) {
+      cc.newUserError()
+      .setText("please enter a non negative integer in the number of rows / starting row text box")
+      .setDebugText("user didn't enter non negative integers in the number of rows / starting row text box")
+      .throwException();
+    }
   }
   
   var fieldsBeforeBuilding = getFields(request);
@@ -741,6 +822,11 @@ function responseToRows(requestedFields, response) {
         // will go to the very bottom of the raw data by following each level's group name.
         if (fieldData !== null && fieldName in fieldData) {
            fieldData = fieldData[fieldName];
+        } else {
+          // if we are in this branch it means there are no fields of the fieldname
+          // in our data -- this will happen when user enters null data, so we
+          // just return null.
+          return row.push(null);
         }
       }
 
@@ -889,8 +975,11 @@ function getData(request) {
   // To handle this, we use the $skip and $top parameters in our request(s) to grab data in chunks.
   var mergedJSON = [];
   var parsedJSON;
-  skip = 0;
-  top = 50000;
+  var numberOfRowsToAccess = user.getProperty('numberOfRowsToAccess');
+  var startingRow = user.getProperty('startingRow');
+  
+  skip = parseInt(startingRow);
+  top = parseInt(numberOfRowsToAccess);
   request_params = {
     method: 'GET',
     headers: {
@@ -901,7 +990,7 @@ function getData(request) {
   }
 
   do {
-    formatted_url = url + "?%24skip=" + skip + "&%24top=" + top;
+    var formatted_url = url + "?%24skip=" + skip + "&%24top=" + top;
     var response = UrlFetchApp.fetch(formatted_url, request_params);
 
     if (response.getResponseCode() !== 200) {
@@ -916,8 +1005,8 @@ function getData(request) {
     mergedJSON.push(...parsedJSON);
 
     skip += 50000;
-    top += 50000;
-  } while(parsedJSON.length != 0);
+    top -= 50000;
+  } while(parsedJSON.length != 0 && top > 0);
 
   rows = responseToRows(requestedFields, mergedJSON);
 
