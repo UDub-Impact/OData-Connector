@@ -265,12 +265,15 @@ function getConfig(request) {
     config.newInfo()
     .setId('number of rows')
     .setText('there are ' + numberOfRows + ' rows in this table');
+    config.newInfo()
+    .setId('time')
+    .setText('Please choose a suitable number of data points to visualize. Note that accessing 50000 rows takes a couple of minutes.');
     config.newTextInput()
     .setId('startingRow')
-    .setName('Enter the starting row that you want to access (please enter a non negative integer)');
+    .setName('Enter the starting row that you want to access (starting from 0)');
     config.newTextInput()
     .setId('numberOfRowsToAccess')
-    .setName('Enter number of rows you want to access (please enter a non negative integer)');  
+    .setName('Enter number of rows you want to access (starting from 0)');
     config.setIsSteppedConfig(false);
   }
   
