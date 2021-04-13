@@ -1,5 +1,5 @@
 # Using the Impact++ ODK Central GDS Connector
-As of 2/12/2021, our connector is fully functional with both visualizing geogrpahic data on GDS and supporting user viewing their repeat data. Using the following steps, you should be able to get up and running! Feel free to open an issue on this repo if something isn't working, or a comment [here](https://forum.getodk.org/t/create-an-odata-connector-to-use-odk-central-as-data-source-in-google-data-studio/23636/12) if you need help.
+As of 2/12/2021, our connector is fully functional with both visualizing geographic data on GDS and supporting user viewing their repeat data. Using the following steps, you should be able to get up and running! Feel free to open an issue on this repo if something isn't working, or a comment [here](https://forum.getodk.org/t/create-an-odata-connector-to-use-odk-central-as-data-source-in-google-data-studio/23636/12) if you need help.
 
 Before reading further, please take a moment to consider your privacy concerns and read the blurb below about user data.  
 
