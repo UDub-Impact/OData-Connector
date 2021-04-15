@@ -6,7 +6,7 @@ Before reading further, please take a moment to consider your privacy concerns a
 ## Preparing the connector for use
 We are working to get this connector into Google's public [Connector Gallery](https://datastudio.google.com/data). Until it is approved, you will need to run the connector from your own Google account following the steps below.
 
-*Note: Google changes changes its tools often and you may find that these instructions are out of date. At the time of writing, the [apps script ide](https://workspaceupdates.googleblog.com/2020/12/google-apps-script-ide-better-code-editing.html) had just been updated without including all features needed for GDS connectors, and our guide is designed for what is now called the "legacy" editor. If you need to modify the connector, the specification provided from Google can be found [here](https://developers.google.com/datastudio/connector/build). *  
+*Note: Google changes its tools often and you may find that these instructions are out of date. At the time of writing, the [apps script ide](https://workspaceupdates.googleblog.com/2020/12/google-apps-script-ide-better-code-editing.html) had just been updated without including all features needed for GDS connectors, and our guide is designed for what is now called the "legacy" editor. If you need to modify the connector, the specification provided from Google can be found [here](https://developers.google.com/datastudio/connector/build). *  
 1. Fork this repository (or get its code in any other way you like)
 2. Head to https://www.google.com/script/start/  
 3. Click "start scripting" along the top bar
