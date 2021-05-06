@@ -10,7 +10,7 @@
   "runtimeVersion": "V8",
   "dataStudio": {
     "name": "ODK Central Connector",
-    "logoUrl": "https://raw.githubusercontent.com/UDub-Impact/OData-Connector/master/impact_logo.png",
+    "logoUrl": "https://raw.githubusercontent.com/UDub-Impact/OData-Connector/master/ODK-logo.jpg",
     "company": "UW Impact++",
     "companyUrl": "https://sites.google.com/view/udubimpact",
     "addonUrl": "https://getodk.org/gds",
