@@ -262,12 +262,14 @@ function getConfig(request) {
   }
   if (isSecondRequest) {
     var numberOfRows = getNumberOfRowsInTable(configParams.URL, configParams.table);
+    let user = PropertiesService.getUserProperties();
+    user.setProperty('totalNumRows', numberOfRows.toString());
     config.newInfo()
     .setId('number of rows')
     .setText('there are ' + numberOfRows + ' rows in this table');
     config.newInfo()
     .setId('time')
-    .setText('Please choose a suitable number of data points to visualize. Note that accessing 50000 rows takes a couple of minutes.');
+    .setText('If you would like, you can limit the number of rows to visualize. If you leave these fields blank, all rows will be included. Note that accessing 50000 rows takes a couple of minutes.');
     config.newTextInput()
     .setId('startingRow')
     .setName('Enter the starting row that you want to access (starting from 0)');
@@ -738,16 +740,22 @@ function getSchema(request) {
     Logger.log(request);
   }
   
+  var user = PropertiesService.getUserProperties();
   if (request !== undefined) {
-    var user = PropertiesService.getUserProperties();
     user.setProperty('table', request.configParams.table);
-    user.setProperty('numberOfRowsToAccess', request.configParams.numberOfRowsToAccess);
-    user.setProperty('startingRow', request.configParams.startingRow);
-    if (!isNonNegativeInteger(request.configParams.numberOfRowsToAccess) || !isNonNegativeInteger(request.configParams.startingRow)) {
+    if (request.configParams.numberOfRowsToAccess === undefined && request.configParams.startingRow === undefined) {
+      // if user hasn't entered any information about rows, default to access all rows.
+      let totalNumOfRows = user.getProperty('totalNumRows');
+      user.setProperty('numberOfRowsToAccess', totalNumOfRows);
+      user.setProperty('startingRow', 0);
+    } else if (!isNonNegativeInteger(request.configParams.numberOfRowsToAccess) || !isNonNegativeInteger(request.configParams.startingRow)) {
       cc.newUserError()
       .setText("please enter a non negative integer in the number of rows / starting row text box")
       .setDebugText("user didn't enter non negative integers in the number of rows / starting row text box")
       .throwException();
+    } else {
+      user.setProperty('numberOfRowsToAccess', request.configParams.numberOfRowsToAccess);
+      user.setProperty('startingRow', request.configParams.startingRow);
     }
   }
   
