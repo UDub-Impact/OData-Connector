@@ -239,12 +239,12 @@ function getConfig(request) {
   
   config.newInfo()
   .setId('Request Data')
-  .setText('Enter the Odata URL for your form (available by clicking on Analyze via Odata from Submissions). It can be the URL for the same form you entered when you first configured the connector or the URL for another form on the same server.');
+  .setText('Enter the Odata URL for your form (available from Submissions by clicking on Analyze via Odata). It can be the URL for the same form you entered when you first configured the connector or the URL for another form on the same server.');
   
   config.newTextInput()
   .setId('URL')
   .setName('Enter an URL to your data')
-  .setHelpText('e.g. https://<your server host>/v1/projects/<projectID>/forms/<formID>.svc')
+  .setHelpText('e.g. https://<your server>/v1/projects/<projectID>/forms/<formID>.svc')
   .setIsDynamic(true);
 
   if (!isFirstRequest) {
