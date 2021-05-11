@@ -12,7 +12,7 @@
 var cc = DataStudioApp.createCommunityConnector();
 var id = 0;
 var debug = false;
-let UNIQUE_SEPERATOR = "MY_SEPERATOR"; // for joining an array into a string, and parsing that string apart. Using this string because user might have ' ', '/' in their data schemas.
+let UNIQUE_SEPARATOR = "MY_SEPARATOR"; // for joining an array into a string, and parsing that string apart. Using this string because user might have ' ', '/' in their data schemas.
 
 /**
 * This method returns the authentication method we are going to use
@@ -239,12 +239,12 @@ function getConfig(request) {
   
   config.newInfo()
   .setId('Request Data')
-  .setText('Enter the URL (by clicking on Analyze via Odata) for the data you would like to access -- It can be the same URL as you entered in the first screen, or it can be a different URL.');
+  .setText('Enter the Odata URL for your form (available from Submissions by clicking on Analyze via Odata). It can be the URL for the same form you entered when you first configured the connector or the URL for another form on the same server.');
   
   config.newTextInput()
   .setId('URL')
   .setName('Enter an URL to your data')
-  .setHelpText('e.g. https://sandbox.getodk.cloud/v1/projects/<projectID>/forms/<formID>.svc')
+  .setHelpText('e.g. https://<your server>/v1/projects/<projectID>/forms/<formID>.svc')
   .setIsDynamic(true);
 
   if (!isFirstRequest) {
@@ -405,7 +405,7 @@ function getAvailableTablesFromURL(URL) {
     tableNames.push(table_info['name']);
     tables.push([table_info['name'], table_info['name']]);
   }
-  user.setProperty('tableNames', tableNames.join(UNIQUE_SEPERATOR));
+  user.setProperty('tableNames', tableNames.join(UNIQUE_SEPARATOR));
   return tables;
 }
 
@@ -473,7 +473,7 @@ function getFields(request) {
     addRepeatFields(fields, userRequestedTable);
   }
 
-  var tableNames = user.getProperty('tableNames').split(UNIQUE_SEPERATOR);
+  var tableNames = user.getProperty('tableNames').split(UNIQUE_SEPARATOR);
   // tableNames = [ 'Submissions', 'Submissions/repeat1', 'Submissions/repeat2' ]
   tableNames = tableNames.filter(e => e !== 'Submissions')
   // tableNames = [ 'Submissions/repeat1', 'Submissions/repeat2' ]
