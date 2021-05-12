@@ -247,18 +247,38 @@ function getConfig(request) {
   .setHelpText('e.g. https://<your server>/v1/projects/<projectID>/forms/<formID>.svc')
   .setIsDynamic(true);
 
-  if (!isFirstRequest) {
-    var table = config.newSelectSingle()
-        .setId("table")
-        .setName("Table")
-        .setIsDynamic(true);
-    config.setIsSteppedConfig(true);
+  if (!isFirstRequest) {    
     var tableOptions = getAvailableTablesFromURL(configParams.URL);
-    tableOptions.forEach(function(labelAndValue) {
-      var tableLabel = labelAndValue[0];
-      var tableValue = labelAndValue[1];
-      table.addOption(config.newOptionBuilder().setLabel(tableLabel).setValue(tableValue));
-    });
+    if (tableOptions.length === 1) {
+      var numberOfRows = getNumberOfRowsInTable(configParams.URL, 'Submissions');
+      let user = PropertiesService.getUserProperties();
+      user.setProperty('table', 'Submissions');
+      user.setProperty('totalNumRows', numberOfRows.toString());
+      config.newInfo()
+      .setId('number of rows')
+      .setText('there are ' + numberOfRows + ' rows in this table');
+      config.newInfo()
+      .setId('time')
+      .setText('If you would like, you can limit the number of rows to visualize. If you leave these fields blank, all rows will be included. Note that accessing 50000 rows takes a couple of minutes.');
+      config.newTextInput()
+      .setId('startingRow')
+      .setName('Enter the starting row that you want to access (starting from 0)');
+      config.newTextInput()
+      .setId('numberOfRowsToAccess')
+      .setName('Enter number of rows you want to access (starting from 0)');
+      config.setIsSteppedConfig(false);
+    } else {
+      var table = config.newSelectSingle()
+      .setId("table")
+      .setName("Table")
+      .setIsDynamic(true);
+      config.setIsSteppedConfig(true);
+      tableOptions.forEach(function(labelAndValue) {
+        var tableLabel = labelAndValue[0];
+        var tableValue = labelAndValue[1];
+        table.addOption(config.newOptionBuilder().setLabel(tableLabel).setValue(tableValue));
+      });
+    }
   }
   if (isSecondRequest) {
     var numberOfRows = getNumberOfRowsInTable(configParams.URL, configParams.table);
@@ -742,7 +762,9 @@ function getSchema(request) {
   
   var user = PropertiesService.getUserProperties();
   if (request !== undefined) {
-    user.setProperty('table', request.configParams.table);
+    if (request.configParams.table !== undefined) {
+      user.setProperty('table', request.configParams.table);
+    }
     if (request.configParams.numberOfRowsToAccess === undefined && request.configParams.startingRow === undefined) {
       // if user hasn't entered any information about rows, default to access all rows.
       let totalNumOfRows = user.getProperty('totalNumRows');
@@ -948,6 +970,9 @@ function getData(request) {
   var projectId = path_infos[1];
   var formId = path_infos[2];
   var table = request.configParams.table;
+  if (table === undefined) {
+    table = 'Submissions';
+  }
 
   var user = PropertiesService.getUserProperties();
   user.setProperty('projectId', projectId);
