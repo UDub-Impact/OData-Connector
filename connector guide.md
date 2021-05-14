@@ -4,17 +4,9 @@ As of 2/12/2021, our connector is fully functional with both visualizing geograp
 Before reading further, please take a moment to consider your privacy concerns and read the blurb below about user data.  
 
 ## Preparing the connector for use
-We are working to get this connector into Google's public [Connector Gallery](https://datastudio.google.com/data). Until it is approved, you will need to run the connector from your own Google account following the steps below.
+We are working to get this connector into Google's public [Connector Gallery](https://datastudio.google.com/data). Until it is approved, you will need to run the connector from your own Google account by accessing the deployment [here](https://datastudio.google.com/datasources/create?connectorId=AKfycbz5hy64bfHz3b92xxIVm6oW59Qh6mBGGZ62x7sjmz8y4vfN4dPZjG27DhH1xmHrkbeAYw)
 
-*Note: Google changes its tools often and you may find that these instructions are out of date. At the time of writing, the [apps script ide](https://workspaceupdates.googleblog.com/2020/12/google-apps-script-ide-better-code-editing.html) had just been updated without including all features needed for GDS connectors, and our guide is designed for what is now called the "legacy" editor. If you need to modify the connector, the specification provided from Google can be found [here](https://developers.google.com/datastudio/connector/build). *  
-1. Fork this repository (or get its code in any other way you like)
-2. Head to https://www.google.com/script/start/  
-3. Click "start scripting" along the top bar
-4. Create a new project (along top bar)
-5. Copy `main.js` into `code.gs` (along with any changes you have made in your fork)
-6. Go to view &rarr; show manifest file &rarr; copy `appscript.json` from our repository.
-7. Create a [deployment](https://developers.google.com/datastudio/connector/deploy#create_separate_deployments) - Note that you will need to switch to the legacy editor for this.
-8. Using (see below)
+
 
 ## Using the connector
 
@@ -59,3 +51,14 @@ Most ODK datatypes have fairly natural GDS equivalents. However, there are some 
 
 ## Performance issues accessing forms with many submissions
 There are known performance issues with the connector when accessing upwards of ~50,000 rows of an ODK form. This is caused by overhead related to converting data from the format ODK provides to the format that GDS requires. As a result, requests for over 50,000 rows might take several minutes or fail altogether. To handle this issue, we allow users to specify the max number of rows that they want to access from their dataset, which means that parts of large forms can still be accessed. Users should also consider how requests for many rows of larger forms might impact the performance or bandwidth of the server they are requesting data from.
+
+## For Developers
+*Note: Google changes its tools often and you may find that these instructions are out of date. At the time of writing, the [apps script ide](https://workspaceupdates.googleblog.com/2020/12/google-apps-script-ide-better-code-editing.html) had just been updated without including all features needed for GDS connectors, and our guide is designed for what is now called the "legacy" editor. If you need to modify the connector, the specification provided from Google can be found [here](https://developers.google.com/datastudio/connector/build). *  
+1. Fork this repository (or get its code in any other way you like)
+2. Head to https://www.google.com/script/start/  
+3. Click "start scripting" along the top bar
+4. Create a new project (along top bar)
+5. Copy `main.js` into `code.gs` (along with any changes you have made in your fork)
+6. Go to view &rarr; show manifest file &rarr; copy `appscript.json` from our repository
+7. change the code however you want. (adding new features, etc)
+8. Create a [deployment](https://developers.google.com/datastudio/connector/deploy#create_separate_deployments) - Note that you will need to switch to the legacy editor for this.
