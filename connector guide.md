@@ -4,7 +4,7 @@ As of 2/12/2021, our connector is fully functional with both visualizing geograp
 Before reading further, please take a moment to consider your privacy concerns and read the blurb below about user data.  
 
 ## Accessing the connector
-We are working to get this connector into Google's public [Connector Gallery](https://datastudio.google.com/data). Until it is approved, you will need to run the connector from your own Google account by accessing the deployment [here](https://datastudio.google.com/datasources/create?connectorId=AKfycbz5hy64bfHz3b92xxIVm6oW59Qh6mBGGZ62x7sjmz8y4vfN4dPZjG27DhH1xmHrkbeAYw)
+We are working to get this connector into Google's public [Connector Gallery](https://datastudio.google.com/data). Until it is approved, you can run the connector by going to the deployment link [here](https://datastudio.google.com/datasources/create?connectorId=AKfycbz5hy64bfHz3b92xxIVm6oW59Qh6mBGGZ62x7sjmz8y4vfN4dPZjG27DhH1xmHrkbeAYw)
 
 
 
