@@ -11,18 +11,17 @@ We are working to get this connector into Google's public [Connector Gallery](ht
 ## Using the connector
 
 1. Have a form which you've uploaded to your instance of ODK Central, as well as some data you'd like to view in Google Data Studio.
-2. Create a Central account which has view-only privileges. This step is not strictly necessary, but Google will [use](https://support.google.com/datastudio/answer/9053467?hl=en) your login information, which users may have varying levels of comfort with.
-3. Deploy your connector via publish &rarr; deploy from manifest &rarr; Latest Version (head) &rarr; click on the datastudio.google.com link
-4. Using the Central account you'd like google to be "aware" of, login to the connector. In the Path text box, please paste the OData URL for your form, as described [here](https://docs.getodk.org/central-submissions/#connecting-to-submission-data-over-odata) (e.g. https://sandbox.getodk.cloud/v1/projects/4/forms/two-repeats.svc)
-5. Once you've logged in, there will be a second configuration screen. You will need to copy the URL you entered in the first screen again to the text box in the second screen. Later you can come back to change the URL to another form you want to analyze.
-6. Click on NEXT.
-7. Now another field should appear that says "Table". (see an example image below)
-8. Click on the triangle in the "Table" field and a dropdown menu would appear. Select the repeat/Submissions table you want to access.
-9. Click on NEXT.
-10. Now you will see the number of rows in this table, and you need to input the starting row and number of rows you want to access. If you have thousands of submissions or less, you can likely pull the full dataset without difficulty. If the number of rows you want to access is around 50,000, it will take a couple minutes to transfer your data and you may want to only pull a subset. (**Note: starting row parameter is 0-indexed. i.e. if you want to access the entire dataset, your start will be 0, and number of rows should be length of dataset.**)
-11. Click on CONNECT.
-12. Make sure the types of your data are correct. If they are not what you expect, you can manually change them.
-13. Create a report and play with your data! Our tutorial ends here as we aren't GDS experts. Happy coding and let us know if you have any feedback!
+1. Create a Central account which has view-only privileges. This step is not strictly necessary, but Google will [use](https://support.google.com/datastudio/answer/9053467?hl=en) your login information, which users may have varying levels of comfort with.
+1. Using the Central account you'd like google to be "aware" of, login to the connector. In the Path text box, please paste the OData URL for your form, as described [here](https://docs.getodk.org/central-submissions/#connecting-to-submission-data-over-odata) (e.g. https://sandbox.getodk.cloud/v1/projects/4/forms/two-repeats.svc)
+1. Once you've logged in, there will be a second configuration screen. You will need to copy the URL you entered in the first screen again to the text box in the second screen. Later you can come back to change the URL to another form you want to analyze.
+1. Click on NEXT.
+1. Now another field should appear that says "Table". (see an example image below)
+1. Click on the triangle in the "Table" field and a dropdown menu would appear. Select the repeat/Submissions table you want to access.
+1. Click on NEXT.
+1. Now you will see the number of rows in this table, and you may configure the starting row and number of rows you want to access. If you have thousands of submissions or less, you can likely pull the full dataset without difficulty. If the number of rows you want to access is around 50,000, it will take a couple minutes to transfer your data and you may want to only pull a subset. (**Note: starting row parameter is 0-indexed. i.e. if you want to access the entire dataset, your start will be 0, and number of rows should be length of dataset.**)
+1. Click on CONNECT.
+1. Make sure the types of your data are correct. If they are not what you expect, you can manually change them.
+1. Create a report and play with your data! Our tutorial ends here. Happy reporting and let us know if you have any feedback!
 
 ![second configuration screen example](configuration.png)
 
