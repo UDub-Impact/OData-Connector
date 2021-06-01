@@ -14,7 +14,7 @@
     "company": "UW Impact++",
     "companyUrl": "https://sites.google.com/view/udubimpact",
     "addonUrl": "https://getodk.org/google-data-studio/",
-    "supportUrl": "https://github.com/UDub-Impact/OData-Connector/issues/new?title=ODK%20GDS%20connector%20issue",
+    "supportUrl": "https://getodk.org/google-data-studio/#help",
     "description": "Explore and visualize your ODK data. To use this connector, you will need a Web User account on a Central server. If you don't already have a Central server, you can set one up yourself (https://docs.getodk.org/central-install/). When you are prompted for a Path below, please specify the OData link of the form you want to analyze.",
     "shortDescription": "Connect to your ODK Central server and build dashboards for all your projects.",
     "feeType": ["FREE"],
