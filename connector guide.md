@@ -4,8 +4,14 @@ As of 2/12/2021, our connector is fully functional with both visualizing geograp
 Before reading further, please take a moment to consider your privacy concerns and read the blurb below about user data.  
 
 ## Accessing the connector
-We are working to get this connector into Google's public [Connector Gallery](https://datastudio.google.com/data). Until it is approved, you can run the connector by going to the deployment link [here](https://datastudio.google.com/datasources/create?connectorId=AKfycbz5hy64bfHz3b92xxIVm6oW59Qh6mBGGZ62x7sjmz8y4vfN4dPZjG27DhH1xmHrkbeAYw)
+As of 6/14/2021, our connector now is reviewed and published by Google as a official data source that anyone can access
+through the Google Data Studio platform!
+To access the ODK data connector, go to [Connector Gallery](https://datastudio.google.com/data), and in the
+search bar enter "ODK Central". A connector with ODK logo on it will appear. Click on that. You will be
+directed to the authentication page. Follow the directions below to use the connector.
 
+(Alternatively, you can just go to the Google Data Studio website, and in your report add "ODK Central" as
+a data source.)
 
 
 ## Using the connector
