@@ -570,8 +570,8 @@ function getFields(request) {
 }
 
 /**
-* Adds submitterName, submissionDate, and __id fields.
-* Represented as "__system/submitterName" and "__system/submissionDate"
+* Adds submitterName, submissionDate, reviewState, and __id fields.
+* Represented as "__system/submitterName", "__system/reviewState",  and "__system/submissionDate"
 * Prefixing "__system" so that responseToRows correctly navigates JSON to find data
 */
 function addSubmissionFields(fields) {
@@ -579,6 +579,12 @@ function addSubmissionFields(fields) {
   fields.newDimension()
     .setId(id.toString())
     .setName("__system/submitterName")
+    .setType(typesObj['dataType']);
+  id++;
+
+  fields.newDimension()
+    .setId(id.toString())
+    .setName("__system/reviewState")
     .setType(typesObj['dataType']);
   id++;
 
@@ -1005,7 +1011,6 @@ function getData(request) {
     Logger.log('url is');
     Logger.log(url);
   }
-
   
   // For some larger forms, UrlFetchApp seems to truncate the JSON returned to us by ODK
   // To handle this, we use the $skip and $top parameters in our request(s) to grab data in chunks.
