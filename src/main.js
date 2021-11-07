@@ -942,9 +942,14 @@ function convertData(data, type, instanceId = "") {
 
 function constructFileURL(fileName, instanceID) {
   var user = PropertiesService.getUserProperties();
-
+  // Update media path to new version which now allows users to download media collected in forms in GDS 
+  // Media path follows form: https://DOMAIN/#/dl/projects/PROJECTID/forms/FORMID/submissions/INSTANCEID/attachments/FILENAME
+  // Example: https://my.odk.server/#/dl/projects/1/forms/forest_survey/submissions/uuid:20bcee82-4a22-4381-a6aa-f926fc85fb22/attachments/my.file.mp3
+  
+  // If dscc.path has multiple '/v1' in it, this will fail
+  var mediaPath = user.getProperty('dscc.path').split("/v1")[0] + "/#/dl";
   return [
-    user.getProperty('dscc.path'),
+    mediaPath,
     'projects',
     user.getProperty('projectId'),
     'forms',
