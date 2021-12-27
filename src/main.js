@@ -668,6 +668,12 @@ function addRepeatFields(fields, table) {
     .setName(table + key)
     .setType(typesObj['dataType']);
   id++;
+
+  fields.newDimension()
+    .setId(id.toString())
+    .setName(table + "/__id")
+    .setType(typesObj['dataType']);
+  id++;
   
   // Add the unique id of the repeat, consider adding later on 
   // fields.newDimension()
