@@ -31,6 +31,25 @@ a data source.)
 
 ![second configuration screen example](configuration.png)
 
+
+## Blending Data
+If you have data in different repeat tables or forms that are related to eachother, you can use the blended data feature of Google Data Studio to create visualizations using both datasets to illustrate their connections. An example of how to do this with different repeat table in the same form follows: 
+1. For this example I am using a form that has two repeat tables: a outer club table and an inner person table. The person table has information about people in each club and the club table has information about the club. In this example I will blend the data of these two tables. 
+2. Open a connection to either table in GDS (Note you do not need to create a report for the first table)
+3. Open a connection to the second table in GDS and create a report from it 
+4. Click on the "Blend Data" option in the toolbar on the right 
+![Blend Data Step 3](blend_data_images/blend_step_3.png)
+5. Click "Join another table" and select the first connection you opened 
+![Blend Data Step 5](blend_data_images/blend_step_5.png)
+6. Add to "Dimensions" the fields you want to include from both tables
+![Blend Data Step 6](blend_data_images/blend_step_6.png)
+7. You can click configure join to select what type of join you want to do. You also need to specify the fields that connect the two tables 
+![Blend Data Step 7](blend_data_images/blend_step_7.png)
+8. Click save and create your report! You can continue to edit the blended data options though! 
+
+
+
+
 ## Google Data Studio
 We ask that before you use our connector, you take a moment to think about any privacy concerns associated with your data. [GDS](https://developers.google.com/datastudio) is a data visualization tool which is capable of working with any data sources accessible via the internet. There is an [existing ecosystem](https://datastudio.google.com/data) of community connectors, which is where we received our inspiration to create one for ODK Central. When you connect to a data source through a connector, you have to share your credentials for that data source with Google. We recommend creating a Central [Project Viewer](https://docs.getodk.org/central-users/#web-user-roles) specifically to use with GDS.
 
@@ -67,3 +86,12 @@ There are known performance issues with the connector when accessing upwards of 
 6. Go to view &rarr; show manifest file &rarr; copy `appscript.json` from our repository
 7. change the code however you want. (adding new features, etc)
 8. Create a [deployment](https://developers.google.com/datastudio/connector/deploy#create_separate_deployments) - Note that you will need to switch to the legacy editor for this.
+
+## Deployment Guide 
+Notes: If you archive a deployment in the new Apps Script editor this permanently changes the deployment id which means any dashboard using the connector linked to that deployment will no longer work (Essentially it deletes the deployment). So instead of creating a new deployment and archiving the current one, update the version of the current deployment to be the most recent version of the code. Here are the steps to do that: 
+1. After making changes to the code go to Apps Script project 
+2. Click on "Use legacy editor"
+3. Click on "Publish -> Deploy from manifest"
+5. Click "Edit" on the deployment you want to update
+6. Change version to ""New" (This updates current deployment but doesn't change the deployment id) 
+7. Click "Save"

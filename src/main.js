@@ -11,8 +11,9 @@
 // global connector variable that each method can access.
 var cc = DataStudioApp.createCommunityConnector();
 var id = 0;
-var debug = false;
+var debug = true;
 let UNIQUE_SEPARATOR = "MY_SEPARATOR"; // for joining an array into a string, and parsing that string apart. Using this string because user might have ' ', '/' in their data schemas.
+var metaDataMap = new Map(); // Map for keeping track of meta data types to parse paths in the schema correctly 
 
 /**
 * This method returns the authentication method we are going to use
@@ -54,8 +55,26 @@ function getAuthType() {
 function isAuthValid() {
   const properties = PropertiesService.getUserProperties();
   var token = properties.getProperty('dscc.token');
+  var timestamp = properties.getProperty('dscc.timestamp');
+  
   // our authentication is valid if and only if token stored in properties service
   // is not null.
+  // AND the timestamp is not over its duration / null
+  if (timestamp == null){
+    return false;
+  }
+  
+  var currTime = new Date();
+  var diff = Math.abs(currTime -  Date.parse(timestamp))
+  var hours = diff/ 36e5;
+    
+  // in minutes for testing 
+  var minutes = Math.floor((diff/1000)/60); //have to parse timestamp because stored as string 
+  if (minutes > 5){ //expires creds every 5 min
+    resetAuth();
+    return false;
+  }
+  
   return token !== null;
 }
 
@@ -94,20 +113,40 @@ function setCredentials(request) {
 *
 * @param {string} username Example: "hughsun@uw.edu"
 * @param {string} password Example: "123"
-* @param {string} path Example: "https://sandbox.central.getodk.org/v1"
+* @param {string} path after parsing Example: "https://sandbox.central.getodk.org/v1"
 * @returns {boolean} whether the username + password + path are correct
 */
 function validateAndStoreCredentials(username, password, path) {
+  var fullPath = path;
   path = parseURL(path)[0];
   var properties = PropertiesService.getUserProperties();
   var token = properties.getProperty('dscc.token');
-  if (token !== null) {
-    // this means that we already set the token, which means
-    // that we could get token from user information, so credential is valid
-    return true;
+  var timestamp = properties.getProperty('dscc.timestamp');
+  var currTime = new Date();
+  
+  if (token !== null) { 
+    // a valid user exists in our database 
+    
+    // the user does not have a timestamp (first time using the program after ts field was addded)
+    if (properties.getProperty('dscc.timestamp') == null){
+      properties.setProperty('dscc.timestamp', currTime.toString());
+      return true;
+    }
+    
+    // the user does have a timestamp
+    // let's check if timestamp is expired
+    var hours = Math.abs(currTime - Date.parse(timestamp)) / 36e5;
+    // in minutes for testing 
+    var minutes = Math.round((currTime.getTime() - Date.parse(timestamp).getTime()) / 60000); //have to parse timestamp because stored as string 
+    if (minutes > 5){ //expires creds every 5 minutes
+      resetAuth();
+      return false;
+    }
+    else{
+      return true;
+    }
   } else {
-    // we haven't fetched token or verify if username and password are right
-    // -- fetch a token and verify if it is valid token
+    // this user does not exist in our database 
     token = getToken(username, password, path);
     if (token === null) {
       // null token means not valid credentials
@@ -115,7 +154,7 @@ function validateAndStoreCredentials(username, password, path) {
     } else {
       // if we are at here we know user information is right. store them away
       // in properties
-      storeCredentials(username, password, path);
+      storeCredentials(username, password, path, fullPath, currTime.toString());
       // also store token.
       properties.setProperty('dscc.token', token);
       return true;
@@ -179,14 +218,17 @@ function getToken(username, password, path) {
 * @param {string} username Example: "hughsun@uw.edu"
 * @param {string} password Example: "123"
 * @param {string} path Example: "https://sandbox.central.getodk.org/v1"
+* @param {string} timestamp Example: "Sun Jan 23 2022 15:20:20 GMT-0800 (Pacific Standard Time)" (output format of javascript Date toString)
 */
-function storeCredentials(username, password, path) {
+function storeCredentials(username, password, path, fullPath, timestamp) {
   // dscc stands for data studio community connector
   PropertiesService
   .getUserProperties()
   .setProperty('dscc.username', username)
   .setProperty('dscc.password', password)
-  .setProperty('dscc.path', path);
+  .setProperty('dscc.path', path)
+  .setProperty('dscc.fullPath', fullPath)
+  .setProperty('dscc.timestamp', timestamp);
 };
 
 /**
@@ -235,7 +277,17 @@ function getConfig(request) {
   if (isFirstRequest) {
     config.setIsSteppedConfig(true);
   }
-
+  
+  if (debug) { 
+    Logger.log("isFirstRequest: " + isFirstRequest);
+    Logger.log("isSecondRequest: " + isSecondRequest);
+  }
+  
+  config.newCheckbox()
+  .setId("reset_auth")
+  .setName("Reset Auth?")
+  .setHelpText("Do you want to reset Auth?")
+  .setIsDynamic(true);
   
   config.newInfo()
   .setId('Request Data')
@@ -246,39 +298,31 @@ function getConfig(request) {
   .setName('Enter an URL to your data')
   .setHelpText('e.g. https://<your server>/v1/projects/<projectID>/forms/<formID>.svc')
   .setIsDynamic(true);
-
+  
+  if (configParams !== undefined && configParams.reset_auth){
+    // could add a message like "please refresh your page"
+    resetAuth();
+    cc.newUserError()
+    .setText("You have successfully logged out. Please refresh your page to return to the login page.")
+    .setDebugText("You have successfully logged out. Please refresh your page to return to the login page")
+    .throwException();
+    return;
+  }
+  
+  // CHANGED I no longer treat a form with the just the submissons table seperately. The dropdown will just have the subissions table as the only option 
+  // This ensures that configParams.table is overwritten by the Submissions table when you edit the connection 
   if (!isFirstRequest) {    
     var tableOptions = getAvailableTablesFromURL(configParams.URL);
-    if (tableOptions.length === 1) {
-      var numberOfRows = getNumberOfRowsInTable(configParams.URL, 'Submissions');
-      let user = PropertiesService.getUserProperties();
-      user.setProperty('table', 'Submissions');
-      user.setProperty('totalNumRows', numberOfRows.toString());
-      config.newInfo()
-      .setId('number of rows')
-      .setText('there are ' + numberOfRows + ' rows in this table');
-      config.newInfo()
-      .setId('time')
-      .setText('If you would like, you can limit the number of rows to visualize. If you leave these fields blank, all rows will be included. Note that accessing 50000 rows takes a couple of minutes.');
-      config.newTextInput()
-      .setId('startingRow')
-      .setName('Enter the starting row that you want to access (starting from 0)');
-      config.newTextInput()
-      .setId('numberOfRowsToAccess')
-      .setName('Enter number of rows you want to access (starting from 0)');
-      config.setIsSteppedConfig(false);
-    } else {
-      var table = config.newSelectSingle()
-      .setId("table")
-      .setName("Table")
-      .setIsDynamic(true);
-      config.setIsSteppedConfig(true);
-      tableOptions.forEach(function(labelAndValue) {
-        var tableLabel = labelAndValue[0];
-        var tableValue = labelAndValue[1];
-        table.addOption(config.newOptionBuilder().setLabel(tableLabel).setValue(tableValue));
-      });
-    }
+    var table = config.newSelectSingle()
+    .setId("table")
+    .setName("Table")
+    .setIsDynamic(true);
+    config.setIsSteppedConfig(true);
+    tableOptions.forEach(function(labelAndValue) {
+      var tableLabel = labelAndValue[0];
+      var tableValue = labelAndValue[1];
+      table.addOption(config.newOptionBuilder().setLabel(tableLabel).setValue(tableValue));
+    });
   }
   if (isSecondRequest) {
     var numberOfRows = getNumberOfRowsInTable(configParams.URL, configParams.table);
@@ -362,6 +406,7 @@ function getAvailableTablesFromURL(URL) {
   // get another response based on the new token
   var user = PropertiesService.getUserProperties();
   var response;
+  var path = user.getProperty('dscc.path');
   try {
     response = UrlFetchApp.fetch(URL, {
       method: 'GET',
@@ -373,7 +418,8 @@ function getAvailableTablesFromURL(URL) {
   } catch (error) {
     cc.newUserError()
     .setText("You have entered an invalid URL.")
-    .setDebugText("User has entered an invalid URL. API request to get table names failed.")
+    .setDebugText("User has entered an invalid URL. API request to get table names failed.\nYou are connected to server: " + path + 
+    "\nMake sure that you are only accessing forms from that server and that your form path is correct.")
     .throwException();
   }
   
@@ -395,7 +441,8 @@ function getAvailableTablesFromURL(URL) {
   if (response.getResponseCode() !== 200) {
     cc.newUserError()
     .setText("You have entered an invalid URL.")
-    .setDebugText("User has entered an invalid URL. API request to get table names failed.")
+    .setDebugText("User has entered an invalid URL. API request to get table names failed.\nYou are connected to server: " + path + 
+    "\nMake sure that you are only accessing forms from that server and that your form path is correct.")
     .throwException();
   }
   
@@ -405,7 +452,8 @@ function getAvailableTablesFromURL(URL) {
   } catch (error) {
     cc.newUserError()
     .setText("bad URL request, please enter the correct URL to your data")
-    .setDebugText("User has entered an invalid URL. API request to get table names failed.")
+    .setDebugText("User has entered an invalid URL. API request to get table names failed.\nYou are connected to server: " + path + 
+    "\nMake sure that you are only accessing forms from that server and that your form path is correct.")
     .throwException();
   }
   
@@ -454,6 +502,7 @@ function isTableInTableNames(tableNames, table) {
 
 function getFields(request) {
   var user = PropertiesService.getUserProperties();
+  metaDataMap.clear() // clear mapping of all meta data 
   
   if (debug) {
     Logger.log('we are inside of getFields() function.');
@@ -468,6 +517,9 @@ function getFields(request) {
   var json = testSchema(request);
   // request = {configParams={URL=https://sandbox.getodk.cloud/v1/projects/4/forms/groups%20schema.svc, table=Submissions}}
   var userRequestedTable = user.getProperty('table');
+  if (debug) {
+    Logger.log("User Requested Table in Get Fields: " + userRequestedTable); 
+  }
   // json looks like:
   //  [{
   //    "path": "/q1",
@@ -485,14 +537,28 @@ function getFields(request) {
   //    "type": "string",
   //    "binary": null
   
+  // Keep track of all the meta data fields in the form to parse the paths of fields in this method and in the resolveToRows method. 
+  for (var i = 0; i < json.length; i++) {
+    // json[i] is an object like {"path":"/student_info","name":"student_info","type":"structure","binary":null}
+
+    var ODataType = json[i]['type'];
+
+    // add name of meta data field and it's type to the map
+    if (ODataType === 'structure' || ODataType === 'repeat') {
+      metaDataMap[json[i]['name']] = "" + ODataType; 
+    }
+  }
+  
   // add submitterName, submissionDate, and __id fields for submissions
   // add __Submissions-id field for repeats
   if (userRequestedTable === "Submissions") {
     addSubmissionFields(fields);
   } else {
     addRepeatFields(fields, userRequestedTable);
-  }
-
+  }  
+  if (debug) {
+    Logger.log("Tables Names in Get Fields: " + user.getProperty('tableNames')); 
+  }  
   var tableNames = user.getProperty('tableNames').split(UNIQUE_SEPARATOR);
   // tableNames = [ 'Submissions', 'Submissions/repeat1', 'Submissions/repeat2' ]
   tableNames = tableNames.filter(e => e !== 'Submissions')
@@ -501,7 +567,6 @@ function getFields(request) {
     tableNames[i] = tableNames[i].substr(12);
   }
   // tableNames = [ 'repeat1', 'repeat2' ]
-
   for (var i = 0; i < json.length; i++) {
     // json[i] is an object like {"path":"/student_info","name":"student_info","type":"structure","binary":null}
 
@@ -513,7 +578,19 @@ function getFields(request) {
     }
     
     // we only want the schema for the table user asks for.
-    var schemaTableName = json[i]['path'].split('/')[1];
+    // /g1/club/person/g2/name
+    var schemaTableName = json[i]['path'].split('/'); // [, g1, club, person, g2, name] 
+    // Remove all groups or fields at the end of the path 
+    while (schemaTableName.length > 0 && (metaDataMap[schemaTableName[schemaTableName.length - 1]] == null || metaDataMap[schemaTableName[schemaTableName.length - 1]] === "structure")) {
+      schemaTableName.pop();
+    }
+    schemaTableName.splice(0, 1); // Remove starting empty space 
+    schemaTableName = schemaTableName.join("."); // Turn into the correct table name (can be nested, ex: /club/person/name -> club.person) 
+    if (debug) {
+      Logger.log("Table names: " + tableNames); // Expected: [/club, /club/person] 
+      Logger.log("full path: " + json[i]['path']); // /student --> /student/person
+      Logger.log("schemaTableName: " + schemaTableName); // student --> student
+    }
     if (userRequestedTable === 'Submissions') {
       if (isTableInTableNames(tableNames, schemaTableName)) {
         continue;
@@ -558,8 +635,8 @@ function getFields(request) {
   
   if (debug) {
     Logger.log('before we exit out of getFields(), fields variable is');
-    fields
-    .asArray()
+    let debugFields = fields.asArray();
+    debugFields
     .map(function(field) {
        Logger.log(field.getId());
     });
@@ -608,13 +685,43 @@ function addSubmissionFields(fields) {
  * Prefixing "{repeat name}" so that responseToRows correctly navigates JSON to find data
 */
 function addRepeatFields(fields, table) {
-  table = table.split(".").slice(1).join("/");
+  var tableKey = table.split("."); // ex: Submissions.club.person 
+  table = tableKey.slice(1).join("/"); 
+  tableKey.splice(-1, 1); // Ex: Submissions.club  
+  tableKey.splice(0, 1); // Ex: club 
+  
+  // remove all the groups at the end 
+  while (tableKey.length > 0 && metaDataMap[tableKey[tableKey.length - 1]] === "structure") {
+    if (debug) {
+      Logger.log("Table key: " + tableKey); 
+    }
+    tableKey.pop(); 
+  }
+ 
+  tableKey = tableKey.join("-"); // Ex: club 
+  var key = '/__Submissions-id';
+  if (tableKey.length > 0) { 
+    key = '/__Submissions-' + tableKey + '-id'; 
+  }
   var typesObj = getGDSType("string");
   fields.newDimension()
     .setId(id.toString())
-    .setName(table + "/__Submissions-id")
+    .setName(table + key)
     .setType(typesObj['dataType']);
   id++;
+
+  fields.newDimension()
+    .setId(id.toString())
+    .setName(table + "/__id")
+    .setType(typesObj['dataType']);
+  id++;
+  
+  // Add the unique id of the repeat, consider adding later on 
+  // fields.newDimension()
+  //  .setId(id.toString())
+  //  .setName("__id")
+  //  .setType(typesObj['dataType']);
+  // id++;
 }
 
 /**
@@ -795,7 +902,9 @@ function getSchema(request) {
     Logger.log(fields);
   }
   
-  return { schema: fields };
+  return cc.newGetSchemaResponse()
+      .setFields(fieldsBeforeBuilding)
+      .build();
 }
 
 /**
@@ -809,8 +918,8 @@ function responseToRows(requestedFields, response) {
   if (debug) {
     Logger.log('we are in responseToRows() function');
     Logger.log('requestedFields parameter is:');
-    requestedFields
-    .asArray()
+    debugRequestedFields = requestedFields.asArray();
+    debugRequestedFields
     .map(function(field) {
       Logger.log(field.getId());
     });
@@ -821,42 +930,72 @@ function responseToRows(requestedFields, response) {
   requestedFields = requestedFields.asArray();
   let user = PropertiesService.getUserProperties();
   let isSubmissions = user.getProperty('table') === "Submissions";
+  var table = user.getProperty('table'); 
 
   return response.map(function(submissions) {
     if (debug) {
       Logger.log('we are inside of responseToRows/response.map function');
       Logger.log('and submissions variable looks like:');
       Logger.log(submissions);
+      Logger.log("Table: " + user.getProperty('table')); 
     }
 
     // the instanceId is named differently for repeat tables than for the submission table
     let instanceID;
+    var repeatDepth = 0; 
     if (isSubmissions) {
       instanceID = submissions['__id'].split(":")[1];
-    } else {
-      instanceID = submissions['__Submissions-id'].split(":")[1];
+    } else {    
+      var tableKey = table.split("."); // ex: Submissions.club.person 
+      tableKey.splice(-1, 1); // Ex: Submissions.club  
+      tableKey.splice(0, 1); // Ex: club 
+      
+      // remove all the groups at the end 
+      while (tableKey.length > 0 && metaDataMap[tableKey[tableKey.length - 1]] === "structure") {
+        tableKey.pop(); 
+      }
+      tableKey = tableKey.join("-"); // Ex: club 
+      
+      var key = '__Submissions-id';
+      if (tableKey.length > 0) { 
+        key = '__Submissions-' + tableKey + '-id'; 
+      }
+      if (debug) {
+        Logger.log("Key in submissions should be: " + key);  
+      }
+      instanceID = submissions[key].split(":")[1];
     }
 
     let row = [];
     requestedFields.forEach(function(field) {
 
-      let fieldPath = field.getName(); // looks like "student_info/name"
+      let fieldPath = field.getName(); // looks like "student_info/name" "/club/person/name_group/fName" 
       if (debug) {
         Logger.log('we are inside of requestedFields.forEach(function (field)');
         Logger.log('and path = ');
-        Logger.log(path);
+        Logger.log(fieldPath);
       }
-      let splitPath = fieldPath.split('/'); // looks like ['student_info', 'name'], or ['repeat1', 'q2'] (for repeat)
+      let splitPath = fieldPath.split('/'); // looks like ['student_info', 'name'], or ['repeat1', 'q2'] (for repeat) [name_group, fName] 
 
-      // if this is from repeat data, need to trim the first element.
+      // if this is from repeat data, need to trim the repeat tables and outer groups
       if (!isSubmissions) {
-        splitPath.shift();
+        // Submissions.club.person.g1.name -> g1.name 
+        let i = splitPath.length - 1;
+        while (splitPath.length > 0 && (metaDataMap[splitPath[i]] === "structure" || metaDataMap[splitPath[i]] == null)) {
+          i--; 
+        }
+        splitPath = splitPath.slice(i + 1); 
+      }
+      if (debug) {
+        Logger.log("Split Path: " + splitPath);
       }
 
       handleGeoAccuracyField(splitPath);
       let fieldData = submissions;
-
       for (const fieldName of splitPath) {
+        if (debug) {
+          Logger.log("field name: " + fieldName); 
+        }
         // this deals with groups: if we have nested groups this for loop
         // will go to the very bottom of the raw data by following each level's group name.
         if (fieldData !== null && fieldName in fieldData) {
@@ -870,6 +1009,11 @@ function responseToRows(requestedFields, response) {
       }
 
       fieldData = convertData(fieldData, field.getType(), instanceID); // convert Odata to GDS data.
+      // LOG HERE to see if type information is correct !!!
+      if (debug) {
+        Logger.log("field type: " + field.getType()); 
+      }
+
       row.push(fieldData);
     });
 
@@ -942,9 +1086,14 @@ function convertData(data, type, instanceId = "") {
 
 function constructFileURL(fileName, instanceID) {
   var user = PropertiesService.getUserProperties();
-
+  // Update media path to new version which now allows users to download media collected in forms in GDS 
+  // Media path follows form: https://DOMAIN/#/dl/projects/PROJECTID/forms/FORMID/submissions/INSTANCEID/attachments/FILENAME
+  // Example: https://my.odk.server/#/dl/projects/1/forms/forest_survey/submissions/uuid:20bcee82-4a22-4381-a6aa-f926fc85fb22/attachments/my.file.mp3
+  
+  // If dscc.path has multiple '/v1' in it, this will fail
+  var mediaPath = user.getProperty('dscc.path').split("/v1")[0] + "/#/dl";
   return [
-    user.getProperty('dscc.path'),
+    mediaPath,
     'projects',
     user.getProperty('projectId'),
     'forms',
@@ -966,10 +1115,45 @@ function constructFileURL(fileName, instanceID) {
 * @return {Object} A JavaScript object that contains the schema and data for the given request.
 */
 function getData(request) {
+  var user = PropertiesService.getUserProperties();
+  
   if (debug) {
     Logger.log('we are in getData() function.');
     Logger.log('request parameter within getData() is:');
     Logger.log(request);
+    Logger.log(request.configParams.URL);
+    Logger.log(user.getProperty('dscc.path'));
+    Logger.log(user.getProperty('dscc.fullPath'));
+  }
+  
+  // dscc.path represents the current path for the current log-in (if we are accessing different path, force reset)
+  // think through when is null... should we store FULL URL?
+  
+  // when dscc.path is null, nothing is stored for a user 
+  // want to compare against everything but .svc part (want store seperate variable for this) 
+  
+  
+  // RIGHT NOW THIS DOES NOT WORK. 
+  // dscc.path = https://sandbox.getodk.cloud/v1
+  // congifParams.URL = https://sandbox.getodk.cloud/v1/projects/4/forms/date-time.svc
+  // Cannot compare using equality, I think we should compare the request config params url with the full URL that we store 
+  
+  if (user.getProperty('dscc.path') != null){
+    var pathWithoutForm = user.getProperty('dscc.fullPath').substr(0, user.getProperty('dscc.fullPath').lastIndexOf("/"));
+    var urlWithoutForm = request.configParams.URL.substr(0, request.configParams.URL.lastIndexOf("/"));
+    Logger.log("stored path: " + pathWithoutForm);
+    Logger.log("inputted path: " + urlWithoutForm);
+    if (pathWithoutForm != urlWithoutForm){
+      resetAuth();
+      cc.newUserError()
+      .setText("Current credentials do not match the server this report's data is from. You have been logged out.")
+      .setDebugText("Your credentials do not match the server we are trying to access with this form.\n" +
+                    " Current Server: " + pathWithoutForm + "\n" +
+                    " Needed Server: " + urlWithoutForm + "\n" +
+                    " Please refresh your page to re-login with to the correct server with the correct credentials.")
+      .throwException();
+      return;
+    }
   }
   
   var path_infos = parseURL(request.configParams.URL);
@@ -980,25 +1164,31 @@ function getData(request) {
     table = 'Submissions';
   }
 
-  var user = PropertiesService.getUserProperties();
   user.setProperty('projectId', projectId);
   user.setProperty('xmlFormId', formId);
   user.setProperty('table', table);
+  getAvailableTablesFromURL(request.configParams.URL);
   
   var requestedFieldIds = request.fields.map(function(field) {
     return field.name;
   });
-
+  
   var requestedFields = getFields().forIds(requestedFieldIds);
   if (debug) {
     Logger.log('requestedFields are');
-    requestedFields
-    .asArray()
+    debugRequestedFields = requestedFields.asArray();
+    debugRequestedFields
     .map(function(field) {
       Logger.log(field.getId());
+      Logger.log(field.getType());
     });
   }
-  
+  // LOG HERE!!!
+  if (debug) {
+    Logger.log('fields we are requesting are (hopefully with types):');
+    Logger.log(requestedFields); // doesn't log anything helpful
+  }
+
   var baseURL = user.getProperty('dscc.path');  // example: 'https://sandbox.central.getodk.org/v1'
   
   var url = [
@@ -1016,8 +1206,30 @@ function getData(request) {
   // To handle this, we use the $skip and $top parameters in our request(s) to grab data in chunks.
   var mergedJSON = [];
   var parsedJSON;
-  var numberOfRowsToAccess = user.getProperty('numberOfRowsToAccess');
-  var startingRow = user.getProperty('startingRow');
+  
+  var numberOfRowsToAccess = request.configParams.numberOfRowsToAccess;
+  var startingRow = request.configParams.startingRow;
+  let totalNumOfRows = getNumberOfRowsInTable(request.configParams.URL, table);
+  
+  // If either numRows is different OR starting rows is different, we give them ALL rows 
+  if (startingRow === undefined) {
+    startingRow = 0;
+  }
+  
+  if (numberOfRowsToAccess === undefined) { 
+    numberOfRowsToAccess = totalNumOfRows-startingRow;
+  }
+  
+  user.setProperty('totalNumRows', totalNumOfRows);
+  user.setProperty('startingRow', startingRow);
+  user.setProperty('numberOfRowsToAccess', numberOfRowsToAccess);
+  
+ 
+  if (debug) {
+    Logger.log("totalNumRows: " + user.getProperty('totalNumRows'));
+    Logger.log("startingRow: " + startingRow);
+    Logger.log("numberOfRowsToAccess: " + numberOfRowsToAccess);
+  }
   
   skip = parseInt(startingRow);
   top = parseInt(numberOfRowsToAccess);
@@ -1032,6 +1244,9 @@ function getData(request) {
 
   do {
     var formatted_url = url + "?%24skip=" + skip + "&%24top=" + top;
+    if (debug) {
+      Logger.log(formatted_url)
+    }
     var response = UrlFetchApp.fetch(formatted_url, request_params);
 
     if (response.getResponseCode() !== 200) {
@@ -1041,8 +1256,14 @@ function getData(request) {
       // get another response based on the new token
       response = UrlFetchApp.fetch(formatted_url, request_params);
     }
+    if (debug) {
+      Logger.log("RESPONSE: " + response)      
+    }
 
     parsedJSON = JSON.parse(response.getContentText()).value;
+    if (debug) {
+      Logger.log("JSON: " + parsedJSON)      
+    }
     mergedJSON.push(...parsedJSON);
 
     skip += 50000;
