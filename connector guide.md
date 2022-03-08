@@ -38,13 +38,13 @@ If you have data in different repeat tables or forms that are related to eachoth
 2. Open a connection to either table in GDS (Note you do not need to create a report for the first table)
 3. Open a connection to the second table in GDS and create a report from it 
 4. Click on the "Blend Data" option in the toolbar on the right 
-![Blend Data Step 3](blend_data_images/blend_step_3.png)
+![Blend Data Step 3](images/blend_step_3.png)
 5. Click "Join another table" and select the first connection you opened 
-![Blend Data Step 5](blend_data_images/blend_step_5.png)
+![Blend Data Step 5](images/blend_step_5.png)
 6. Add to "Dimensions" the fields you want to include from both tables
-![Blend Data Step 6](blend_data_images/blend_step_6.png)
+![Blend Data Step 6](images/blend_step_6.png)
 7. You can click configure join to select what type of join you want to do. You also need to specify the fields that connect the two tables 
-![Blend Data Step 7](blend_data_images/blend_step_7.png)
+![Blend Data Step 7](images/blend_step_7.png)
 8. Click save and create your report! You can continue to edit the blended data options though! 
 
 

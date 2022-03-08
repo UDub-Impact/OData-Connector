@@ -1,5 +1,5 @@
 /**
-* Copyright 2020 Pieter Benjamin, Naisan Noorassa, Hugh Sun, Ratik Koka
+* Copyright 2020 Pieter Benjamin, Naisan Noorassa, Hugh Sun, Ratik Koka, Aashna Sheth, Sam Levy
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 *
@@ -14,6 +14,7 @@ var id = 0;
 var debug = true;
 let UNIQUE_SEPARATOR = "MY_SEPARATOR"; // for joining an array into a string, and parsing that string apart. Using this string because user might have ' ', '/' in their data schemas.
 var metaDataMap = new Map(); // Map for keeping track of meta data types to parse paths in the schema correctly 
+var AUTH_TIMEOUT = 24 // Auth expires every 24 hours
 
 /**
 * This method returns the authentication method we are going to use
@@ -65,13 +66,13 @@ function isAuthValid() {
   }
   
   var currTime = new Date();
-  var diff = Math.abs(currTime -  Date.parse(timestamp))
+  var diff = Math.abs(currTime - Date.parse(timestamp)) // have to parse timestamp because stored as string 
   var hours = diff/ 36e5;
     
   // in minutes for testing 
-  var minutes = Math.floor((diff/1000)/60); //have to parse timestamp because stored as string 
-  if (minutes > 5){ //expires creds every 5 min
-    resetAuth();
+  var minutes = Math.floor(diff / 600000); // in hours 
+  if (minutes > AUTH_TIMEOUT){ // expires creds every AUTH_TIMEOUT hours
+    resetAuth(); // 
     return false;
   }
   
@@ -127,7 +128,7 @@ function validateAndStoreCredentials(username, password, path) {
   if (token !== null) { 
     // a valid user exists in our database 
     
-    // the user does not have a timestamp (first time using the program after ts field was addded)
+    // the user does not have a timestamp (if this is users first time using the connector)
     if (properties.getProperty('dscc.timestamp') == null){
       properties.setProperty('dscc.timestamp', currTime.toString());
       return true;
@@ -137,9 +138,9 @@ function validateAndStoreCredentials(username, password, path) {
     // let's check if timestamp is expired
     var hours = Math.abs(currTime - Date.parse(timestamp)) / 36e5;
     // in minutes for testing 
-    var minutes = Math.round((currTime.getTime() - Date.parse(timestamp).getTime()) / 60000); //have to parse timestamp because stored as string 
-    if (minutes > 5){ //expires creds every 5 minutes
-      resetAuth();
+    var minutes = Math.round((currTime.getTime() - Date.parse(timestamp).getTime()) / 600000); // in hours, have to parse timestamp because stored as string 
+    if (minutes > AUTH_TIMEOUT){ // expires creds every AUTH_TIMEOUT hours 
+      resetAuth(); 
       return false;
     }
     else{
@@ -218,6 +219,7 @@ function getToken(username, password, path) {
 * @param {string} username Example: "hughsun@uw.edu"
 * @param {string} password Example: "123"
 * @param {string} path Example: "https://sandbox.central.getodk.org/v1"
+* @param {string} fullPath Example: "https://sandbox.getodk.cloud/v1/projects/4/forms/nested_repeat_with_groups.svc" - used to check if user logged into right server/project
 * @param {string} timestamp Example: "Sun Jan 23 2022 15:20:20 GMT-0800 (Pacific Standard Time)" (output format of javascript Date toString)
 */
 function storeCredentials(username, password, path, fullPath, timestamp) {
@@ -232,7 +234,7 @@ function storeCredentials(username, password, path, fullPath, timestamp) {
 };
 
 /**
-* This method clears user credentials for the third-party service.
+* This method clears user credentials for the third-party service. 
 * 
 */
 function resetAuth() {
@@ -299,6 +301,7 @@ function getConfig(request) {
   .setHelpText('e.g. https://<your server>/v1/projects/<projectID>/forms/<formID>.svc')
   .setIsDynamic(true);
   
+  // If user logs out, throw an exception so they know to reset their page
   if (configParams !== undefined && configParams.reset_auth){
     // could add a message like "please refresh your page"
     resetAuth();
@@ -309,7 +312,7 @@ function getConfig(request) {
     return;
   }
   
-  // CHANGED I no longer treat a form with the just the submissons table seperately. The dropdown will just have the subissions table as the only option 
+  // The dropdown will just have all tables as options. If no repeat tables, will only be the Submissions table. 
   // This ensures that configParams.table is overwritten by the Submissions table when you edit the connection 
   if (!isFirstRequest) {    
     var tableOptions = getAvailableTablesFromURL(configParams.URL);
@@ -538,6 +541,7 @@ function getFields(request) {
   //    "binary": null
   
   // Keep track of all the meta data fields in the form to parse the paths of fields in this method and in the resolveToRows method. 
+  // Use it to distinguish repeat tables from groups (other structures)
   for (var i = 0; i < json.length; i++) {
     // json[i] is an object like {"path":"/student_info","name":"student_info","type":"structure","binary":null}
 
@@ -715,13 +719,6 @@ function addRepeatFields(fields, table) {
     .setName(table + "/__id")
     .setType(typesObj['dataType']);
   id++;
-  
-  // Add the unique id of the repeat, consider adding later on 
-  // fields.newDimension()
-  //  .setId(id.toString())
-  //  .setName("__id")
-  //  .setType(typesObj['dataType']);
-  // id++;
 }
 
 /**
@@ -785,6 +782,7 @@ function getGDSType(OdataType) {
   
   return {'conceptType': 'dimension', 'dataType': types.TEXT};
 }
+
 
 function testSchema(request) {
   var user = PropertiesService.getUserProperties();
@@ -1009,7 +1007,6 @@ function responseToRows(requestedFields, response) {
       }
 
       fieldData = convertData(fieldData, field.getType(), instanceID); // convert Odata to GDS data.
-      // LOG HERE to see if type information is correct !!!
       if (debug) {
         Logger.log("field type: " + field.getType()); 
       }
@@ -1296,3 +1293,6 @@ function getData(request) {
 function isAdminUser() {
   return true;
 }
+
+
+
