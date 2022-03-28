@@ -67,3 +67,13 @@ There are known performance issues with the connector when accessing upwards of 
 6. Go to view &rarr; show manifest file &rarr; copy `appscript.json` from our repository
 7. change the code however you want. (adding new features, etc)
 8. Create a [deployment](https://developers.google.com/datastudio/connector/deploy#create_separate_deployments) - Note that you will need to switch to the legacy editor for this.
+
+## Deployment Guide 
+Notes: If you archive a deployment in the new Apps Script editor this permanently changes the deployment id which means any dashboard using the connector linked to that deployment will no longer work (Essentially it deletes the deployment). So instead of creating a new deployment and archiving the current one, update the version of the current deployment to be the most recent version of the code. Here are the steps to do that: 
+1. After making changes to the code go to Apps Script project 
+2. Click on "Use legacy editor"
+3. Click on "Publish -> Deploy from manifest"
+5. Click "Edit" on the deployment you want to update
+6. Change version to ""New" (This updates current deployment but doesn't change the deployment id) 
+7. Click "Save"
+
