@@ -274,6 +274,8 @@ function getConfig(request) {
   var isFirstRequest = configParams === undefined;
   var isSecondRequest = configParams !== undefined && configParams.table !== undefined;
   var config = cc.getConfig();
+  var user = PropertiesService.getUserProperties(); 
+  var current_form = user.getProperty('dscc.fullPath') != null ? user.getProperty('dscc.fullPath') : "";
   if (isFirstRequest) {
     config.setIsSteppedConfig(true);
   }
@@ -291,7 +293,7 @@ function getConfig(request) {
   
   config.newInfo()
   .setId('Request Data')
-  .setText('Enter the Odata URL for your form (available from Submissions by clicking on Analyze via Odata). It can be the URL for the same form you entered when you first configured the connector or the URL for another form on the same server.');
+    .setText('Enter the Odata URL for your form (available from Submissions by clicking on Analyze via Odata). It can be the URL for the same form you entered when you first configured the connector: ' + current_form +  ' or the URL for another form on the same server.');
   
   config.newTextInput()
   .setId('URL')
