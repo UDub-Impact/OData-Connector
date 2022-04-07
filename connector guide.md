@@ -55,7 +55,7 @@ If you would like to change the URL or table you are using, we suggest you close
 To switch the server you are connected to:
 1. Open the connector and click the "Reset Auth" checkbox in the upper left corner
 
-![reset auth example](resetAuthConfig.png)
+![reset auth example](images/resetAuthConfig.png)
 
 2. Next, refresh your browser window to be led back to the login page where you can input a new server URL and/or email/password.
 
