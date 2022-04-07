@@ -18,7 +18,7 @@ a data source.)
 
 1. Have a form which you've uploaded to your instance of ODK Central, as well as some data you'd like to view in Google Data Studio.
 1. Create a Central account which has view-only privileges. This step is not strictly necessary, but Google will [use](https://support.google.com/datastudio/answer/9053467?hl=en) your login information, which users may have varying levels of comfort with.
-1. Using the Central account you'd like google to be "aware" of, login to the connector. In the Path text box, please paste the OData URL for your form, as described [here](https://docs.getodk.org/central-submissions/#connecting-to-submission-data-over-odata) (e.g. https://sandbox.getodk.cloud/v1/projects/4/forms/two-repeats.svc)
+1. Using the Central account you'd like google to be "aware" of, login to the connector. In the Path text box, please paste the **full** OData URL for your form, as described [here](https://docs.getodk.org/central-submissions/#connecting-to-submission-data-over-odata) (e.g. https://sandbox.getodk.cloud/v1/projects/4/forms/two-repeats.svc)
 1. Once you've logged in, there will be a second configuration screen. You will need to copy the URL you entered in the first screen again to the text box in the second screen. Later you can come back to change the URL to another form you want to analyze.
 1. Click on NEXT.
 1. Now another field should appear that says "Table". (see an example image below)
@@ -30,6 +30,38 @@ a data source.)
 1. Create a report and play with your data! Our tutorial ends here. Happy reporting and let us know if you have any feedback!
 
 ![second configuration screen example](configuration.png)
+
+
+## Blending Data
+If you have data in different repeat tables or forms that are related to eachother, you can use the blended data feature of Google Data Studio to create visualizations using both datasets to illustrate their connections. An example of how to do this with different repeat table in the same form follows: 
+1. For this example I am using a form that has two repeat tables: a outer club table and an inner person table. The person table has information about people in each club and the club table has information about the club. In this example I will blend the data of these two tables. 
+2. Open a connection to either table in GDS (Note you do not need to create a report for the first table)
+3. Open a connection to the second table in GDS and create a report from it 
+4. Click on the "Blend Data" option in the toolbar on the right 
+![Blend Data Step 3](images/blend_step_3.png)
+5. Click "Join another table" and select the first connection you opened 
+![Blend Data Step 5](images/blend_step_5.png)
+6. Add to "Dimensions" the fields you want to include from both tables
+![Blend Data Step 6](images/blend_step_6.png)
+7. You can click configure join to select what type of join you want to do. You also need to specify the fields that connect the two tables 
+![Blend Data Step 7](images/blend_step_7.png)
+8. Click save and create your report! You can continue to edit the blended data options though! 
+
+## Edit Connection 
+We strongly advise **against** editing connections because it may corrupt the original connection and add the wrong data types for the new connection.
+If you would like to change the URL or table you are using, we suggest you close your current connector and open a new one (and log out if you intend to connect to an entirely new server).
+
+## Authentication 
+To switch the server you are connected to:
+1. Open the connector and click the "Reset Auth" checkbox in the upper left corner
+
+![reset auth example](resetAuthConfig.png)
+
+2. Next, refresh your browser window to be led back to the login page where you can input a new server URL and/or email/password.
+
+Note that once you create a GDS report connected to some server, the results of the report will always be viewable. However, when you refresh your data, you may recieve an error stating that you are connected to the wrong server. This means that between the time you created your report and when you are viewing it, you logged into another server. To fix this error, follow the steps above to log out and log in to the correct server. Then refresh your report data once more and it should load properly. 
+
+Whenever you are facing log in issues or see some errors regarding "concat null", it likely means your credentials have expired. Try refreshing your browser window and/or clicking "Refresh Data" in GDS!
 
 ## Google Data Studio
 We ask that before you use our connector, you take a moment to think about any privacy concerns associated with your data. [GDS](https://developers.google.com/datastudio) is a data visualization tool which is capable of working with any data sources accessible via the internet. There is an [existing ecosystem](https://datastudio.google.com/data) of community connectors, which is where we received our inspiration to create one for ODK Central. When you connect to a data source through a connector, you have to share your credentials for that data source with Google. We recommend creating a Central [Project Viewer](https://docs.getodk.org/central-users/#web-user-roles) specifically to use with GDS.
@@ -66,7 +98,8 @@ There are known performance issues with the connector when accessing upwards of 
 5. Copy `main.js` into `code.gs` (along with any changes you have made in your fork)
 6. Go to view &rarr; show manifest file &rarr; copy `appscript.json` from our repository
 7. change the code however you want. (adding new features, etc)
-8. Create a [deployment](https://developers.google.com/datastudio/connector/deploy#create_separate_deployments) - Note that you will need to switch to the legacy editor for this.
+8. Create a [deployment](https://developers.google.com/datastudio/connector/deploy#create_separate_deployments) - Note that you will need to switch to the legacy editor for this. If you simply want to update instead of create a brand new deployment, click "Edit" on the deployment and select a new version number. The Connector link will automatically pull code from the most recent version. Please refrence our deployment guide below for more detail.
+9. Debugging logs can be viewed by going to Views > Logs > App Script Dashboard > No restrictions on the 'Run As'. You can add more logs by adding Logger.log() statements throughout the code. Make sure the debug flag at the top of our code is set to true! 
 
 ## Deployment Guide 
 Notes: If you archive a deployment in the new Apps Script editor this permanently changes the deployment id which means any dashboard using the connector linked to that deployment will no longer work (Essentially it deletes the deployment). So instead of creating a new deployment and archiving the current one, update the version of the current deployment to be the most recent version of the code. Here are the steps to do that: 
@@ -76,4 +109,3 @@ Notes: If you archive a deployment in the new Apps Script editor this permanentl
 5. Click "Edit" on the deployment you want to update
 6. Change version to ""New" (This updates current deployment but doesn't change the deployment id) 
 7. Click "Save"
-
