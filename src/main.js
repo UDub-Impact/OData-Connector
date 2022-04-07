@@ -11,7 +11,7 @@
 // global connector variable that each method can access.
 var cc = DataStudioApp.createCommunityConnector();
 var id = 0;
-var debug = true;
+var debug = false;
 let UNIQUE_SEPARATOR = "MY_SEPARATOR"; // for joining an array into a string, and parsing that string apart. Using this string because user might have ' ', '/' in their data schemas.
 var metaDataMap = new Map(); // Map for keeping track of meta data types to parse paths in the schema correctly 
 var AUTH_TIMEOUT = 24 // Auth expires every 24 hours
@@ -51,31 +51,30 @@ function getAuthType() {
 * This method is required by user password authentication
 *
 * @returns {boolean} true if 3rd-party service credentials are valid,
-*                    false otherwise.
+*                    false if token is null or if timestamp since last login is null or over 24 hours. 
 */
 function isAuthValid() {
   const properties = PropertiesService.getUserProperties();
   var token = properties.getProperty('dscc.token');
   var timestamp = properties.getProperty('dscc.timestamp');
-  
-  // our authentication is valid if and only if token stored in properties service
-  // is not null.
-  // AND the timestamp is not over its duration / null
+
+  // Ensure timestamp is not null 
   if (timestamp == null){
     return false;
   }
   
+  // Check that the timestamp is not over its duration
   var currTime = new Date();
   var diff = Math.abs(currTime - Date.parse(timestamp)) // have to parse timestamp because stored as string 
-  var hours = diff/ 36e5;
-    
-  // in minutes for testing 
-  var minutes = Math.floor(diff / 600000); // in hours 
-  if (minutes > AUTH_TIMEOUT){ // expires creds every AUTH_TIMEOUT hours
-    resetAuth(); // 
+  var hours = diff/ 36e5; // number of hours between timestamp and current time 
+
+  if (hours > AUTH_TIMEOUT){ // expires creds every AUTH_TIMEOUT hours
+    resetAuth(); 
     return false;
   }
   
+  // our authentication is valid if and only if token stored in properties service
+  // is not null
   return token !== null;
 }
 
@@ -114,7 +113,7 @@ function setCredentials(request) {
 *
 * @param {string} username Example: "hughsun@uw.edu"
 * @param {string} password Example: "123"
-* @param {string} path after parsing Example: "https://sandbox.central.getodk.org/v1"
+* @param {string} path before parsing Example: "https://sandbox.getodk.cloud/v1/projects/4/forms/nested_repeat_with_groups.svc"
 * @returns {boolean} whether the username + password + path are correct
 */
 function validateAndStoreCredentials(username, password, path) {
@@ -134,16 +133,15 @@ function validateAndStoreCredentials(username, password, path) {
       return true;
     }
     
-    // the user does have a timestamp
-    // let's check if timestamp is expired
-    var hours = Math.abs(currTime - Date.parse(timestamp)) / 36e5;
-    // in minutes for testing 
-    var minutes = Math.round((currTime.getTime() - Date.parse(timestamp).getTime()) / 600000); // in hours, have to parse timestamp because stored as string 
-    if (minutes > AUTH_TIMEOUT){ // expires creds every AUTH_TIMEOUT hours 
+    // the user does have a timestamp: let's check if timestamp is expired. If it is, return false 
+    // and reset authentication
+    var currTime = new Date();
+    var diff = Math.abs(currTime - Date.parse(timestamp)) // have to parse timestamp because stored as string 
+    var hours = diff/ 36e5; // number of hours between timestamp and current time 
+    if (hours > AUTH_TIMEOUT){ // expires creds every AUTH_TIMEOUT hours 
       resetAuth(); 
       return false;
-    }
-    else{
+    } else{
       return true;
     }
   } else {
@@ -405,6 +403,10 @@ function getNumberOfRowsInTable(URL, tableName) {
   return responseJson['@odata.count'];
 }
 
+/**
+ * Returns all repeat tables from a form specified by the given OData URL 
+ * @param {string} URL OData URL of form to get repeat tables from 
+ */
 function getAvailableTablesFromURL(URL) {
   // get another response based on the new token
   var user = PropertiesService.getUserProperties();
@@ -419,9 +421,10 @@ function getAvailableTablesFromURL(URL) {
       muteHttpExceptions: true
     });
   } catch (error) {
+    let error_path = user.getProperty('dscc.fullPath') != null ? user.getProperty('dscc.fullPath').substr(0, user.getProperty('dscc.fullPath').lastIndexOf("/")) : path;
     cc.newUserError()
     .setText("You have entered an invalid URL.")
-    .setDebugText("User has entered an invalid URL. API request to get table names failed.\nYou are connected to server: " + path + 
+    .setDebugText("User has entered an invalid URL. API request to get table names failed.\nYou are connected to server: " + error_path + 
     "\nMake sure that you are only accessing forms from that server and that your form path is correct.")
     .throwException();
   }
@@ -442,9 +445,10 @@ function getAvailableTablesFromURL(URL) {
   }
 
   if (response.getResponseCode() !== 200) {
+    let error_path = user.getProperty('dscc.fullPath') != null ? user.getProperty('dscc.fullPath').substr(0, user.getProperty('dscc.fullPath').lastIndexOf("/")) : path;
     cc.newUserError()
     .setText("You have entered an invalid URL.")
-    .setDebugText("User has entered an invalid URL. API request to get table names failed.\nYou are connected to server: " + path + 
+    .setDebugText("User has entered an invalid URL. API request to get table names failed.\nYou are connected to server: " + error_path + 
     "\nMake sure that you are only accessing forms from that server and that your form path is correct.")
     .throwException();
   }
@@ -453,9 +457,10 @@ function getAvailableTablesFromURL(URL) {
   try {
     responseJson = JSON.parse(response);
   } catch (error) {
+    let error_path = user.getProperty('dscc.fullPath') != null ? user.getProperty('dscc.fullPath').substr(0, user.getProperty('dscc.fullPath').lastIndexOf("/")) : path;
     cc.newUserError()
     .setText("bad URL request, please enter the correct URL to your data")
-    .setDebugText("User has entered an invalid URL. API request to get table names failed.\nYou are connected to server: " + path + 
+    .setDebugText("User has entered an invalid URL. API request to get table names failed.\nYou are connected to server: " + error_path + 
     "\nMake sure that you are only accessing forms from that server and that your form path is correct.")
     .throwException();
   }
@@ -525,25 +530,39 @@ function getFields(request) {
   }
   // json looks like:
   //  [{
-  //    "path": "/q1",
+  //    "path": "/q1",     // Normal question field (not nested)
   //    "name": "q1",
   //    "type": "string",
   //    "binary": null
-  //}, {
-  //    "path": "/repeat1",
+  // }, {
+  //    "path": "/repeat1",  // Repeat table meta data field 
   //    "name": "repeat1",
   //    "type": "repeat",
   //    "binary": null
-  //}, {
-  //    "path": "/repeat1/q2",
+  // }, {
+  //    "path": "/repeat1/q2",  // Normal question field (nested in repeat)
   //    "name": "q2",
   //    "type": "string",
   //    "binary": null
+  // }, { 
+  //   "path": "/repeat1/group1", // Group meta data field (nested in repeat)
+  //   "name": "group1",
+  //   "type": "structure",       // group is a structure 
+  //   "binary": null
+  // }, {
+  //   "path": "/repeat1/group1/q3",  // Normal question field (nested in a group that is nested in a repeat)
+  //   "name": "q3",
+  //   "type": "string",
+  //   "binary": null
+  // }]
+
   
   // Keep track of all the meta data fields in the form to parse the paths of fields in this method and in the resolveToRows method. 
-  // Use it to distinguish repeat tables from groups (other structures)
+  // Use it to distinguish repeat tables from groups (other structures). Have to collect meta data fields first to 
+  // then parse the normal fields of the forms correctly because the normal fields are nested in repeats or groups: 
+  // ex: /repeat1/group1/q3
   for (var i = 0; i < json.length; i++) {
-    // json[i] is an object like {"path":"/student_info","name":"student_info","type":"structure","binary":null}
+    // json[i] is an object like {"path":"/repeat1/group1/q3", "name":"q3", "type":"string", "binary":null}
 
     var ODataType = json[i]['type'];
 
@@ -564,16 +583,14 @@ function getFields(request) {
     Logger.log("Tables Names in Get Fields: " + user.getProperty('tableNames')); 
   }  
   var tableNames = user.getProperty('tableNames').split(UNIQUE_SEPARATOR);
-  // tableNames = [ 'Submissions', 'Submissions/repeat1', 'Submissions/repeat2' ]
+  // tableNames = [ 'Submissions', 'Submissions/repeat1' ]
   tableNames = tableNames.filter(e => e !== 'Submissions')
-  // tableNames = [ 'Submissions/repeat1', 'Submissions/repeat2' ]
+  // tableNames = [ 'Submissions/repeat1' ]
   for (var i = 0; i < tableNames.length; i++) {
     tableNames[i] = tableNames[i].substr(12);
   }
-  // tableNames = [ 'repeat1', 'repeat2' ]
+  // tableNames = [ 'repeat1' ]
   for (var i = 0; i < json.length; i++) {
-    // json[i] is an object like {"path":"/student_info","name":"student_info","type":"structure","binary":null}
-
     var ODataType = json[i]['type'];
 
     // disregard the meta data schema
@@ -582,18 +599,25 @@ function getFields(request) {
     }
     
     // we only want the schema for the table user asks for.
-    // /g1/club/person/g2/name
-    var schemaTableName = json[i]['path'].split('/'); // [, g1, club, person, g2, name] 
-    // Remove all groups or fields at the end of the path 
+    // /repeat1/group1/q3
+    // SchematableName = [, repeat1, group1, q3 ]
+    var schemaTableName = json[i]['path'].split('/');     
+    // Remove all groups or fields at the end of the path to get the table the field is nested in 
+    // group: metaDataMap[schemaTableName[schemaTableName.length - 1]] === "structure"
+    // field: metaDataMap[schemaTableName[schemaTableName.length - 1]] == null
     while (schemaTableName.length > 0 && (metaDataMap[schemaTableName[schemaTableName.length - 1]] == null || metaDataMap[schemaTableName[schemaTableName.length - 1]] === "structure")) {
       schemaTableName.pop();
     }
+    // SchemaTableName = [, repeat1 ]
     schemaTableName.splice(0, 1); // Remove starting empty space 
-    schemaTableName = schemaTableName.join("."); // Turn into the correct table name (can be nested, ex: /club/person/name -> club.person) 
+    // SchemaTableName = [ repeat1 ]
+    // Turn into the correct table name (can have repeat table nested in another repeat table, ex: [ repeat1, repeat2 ] -> repeat1.repeat2) 
+    schemaTableName = schemaTableName.join("."); 
+    // SchemaTableName = repeat1
     if (debug) {
-      Logger.log("Table names: " + tableNames); // Expected: [/club, /club/person] 
-      Logger.log("full path: " + json[i]['path']); // /student --> /student/person
-      Logger.log("schemaTableName: " + schemaTableName); // student --> student
+      Logger.log("Table names: " + tableNames); // Expected: [ repeat1 ] 
+      Logger.log("full path: " + json[i]['path']); // Expected: /repeat1/group1/q3
+      Logger.log("schemaTableName: " + schemaTableName); // Expected: repeat1
     }
     if (userRequestedTable === 'Submissions') {
       if (isTableInTableNames(tableNames, schemaTableName)) {
@@ -695,6 +719,7 @@ function addRepeatFields(fields, table) {
   tableKey.splice(0, 1); // Ex: club 
   
   // remove all the groups at the end 
+  // group: metaDataMap[tableKey[tableKey.length - 1]] === "structure"
   while (tableKey.length > 0 && metaDataMap[tableKey[tableKey.length - 1]] === "structure") {
     if (debug) {
       Logger.log("Table key: " + tableKey); 
@@ -944,15 +969,19 @@ function responseToRows(requestedFields, response) {
     if (isSubmissions) {
       instanceID = submissions['__id'].split(":")[1];
     } else {    
-      var tableKey = table.split("."); // ex: Submissions.club.person 
-      tableKey.splice(-1, 1); // Ex: Submissions.club  
-      tableKey.splice(0, 1); // Ex: club 
+      var tableKey = table.split("."); // ex: Submissions.repeat1.group1.q3
+      tableKey.splice(-1, 1); // Ex: Submissions.repeat1.group1  
+      tableKey.splice(0, 1); // Ex: repeat1.group1
       
       // remove all the groups at the end 
+      // group: metaDataMap[tableKey[tableKey.length - 1]] === "structure"
+      // tableKey = repeat1.group1
       while (tableKey.length > 0 && metaDataMap[tableKey[tableKey.length - 1]] === "structure") {
         tableKey.pop(); 
       }
-      tableKey = tableKey.join("-"); // Ex: club 
+      // tableKey = repeat1
+      tableKey = tableKey.join("-"); 
+      // tableKey = repeat1
       
       var key = '__Submissions-id';
       if (tableKey.length > 0) { 
@@ -966,23 +995,26 @@ function responseToRows(requestedFields, response) {
 
     let row = [];
     requestedFields.forEach(function(field) {
-
-      let fieldPath = field.getName(); // looks like "student_info/name" "/club/person/name_group/fName" 
+      let fieldPath = field.getName(); // looks like "/repeat1/group1/q3"
       if (debug) {
         Logger.log('we are inside of requestedFields.forEach(function (field)');
         Logger.log('and path = ');
         Logger.log(fieldPath);
       }
-      let splitPath = fieldPath.split('/'); // looks like ['student_info', 'name'], or ['repeat1', 'q2'] (for repeat) [name_group, fName] 
+      let splitPath = fieldPath.split('/'); // looks like ['repeat1', 'group1', 'q3'] 
 
-      // if this is from repeat data, need to trim the repeat tables and outer groups
+      // if this is from repeat data, need to trim the repeat tables
+      // We keep the groups and fields in order to find the correct field in the fieldData
       if (!isSubmissions) {
-        // Submissions.club.person.g1.name -> g1.name 
+        // splitPath = ['repeat1', 'group1', 'q3'] 
+        // i = 2
         let i = splitPath.length - 1;
         while (splitPath.length > 0 && (metaDataMap[splitPath[i]] === "structure" || metaDataMap[splitPath[i]] == null)) {
           i--; 
         }
+        // i = 0
         splitPath = splitPath.slice(i + 1); 
+        // splitPath = [ 'group1', 'q3' ]
       }
       if (debug) {
         Logger.log("Split Path: " + splitPath);
@@ -1135,11 +1167,17 @@ function getData(request) {
   // congifParams.URL = https://sandbox.getodk.cloud/v1/projects/4/forms/date-time.svc
   // Cannot compare using equality, I think we should compare the request config params url with the full URL that we store 
   
-  if (user.getProperty('dscc.path') != null){
+  if (user.getProperty('dscc.path') != null && user.getProperty('dscc.fullPath') != null){
+    if (debug) {
+      Logger.log("full path: " + user.getProperty('dscc.fullPath'));
+      Logger.log("path: " + user.getProperty('dscc.path'));
+    }
     var pathWithoutForm = user.getProperty('dscc.fullPath').substr(0, user.getProperty('dscc.fullPath').lastIndexOf("/"));
     var urlWithoutForm = request.configParams.URL.substr(0, request.configParams.URL.lastIndexOf("/"));
-    Logger.log("stored path: " + pathWithoutForm);
-    Logger.log("inputted path: " + urlWithoutForm);
+    if (debug) {
+      Logger.log("stored path: " + pathWithoutForm);
+      Logger.log("inputted path: " + urlWithoutForm);
+    }
     if (pathWithoutForm != urlWithoutForm){
       resetAuth();
       cc.newUserError()
@@ -1293,5 +1331,3 @@ function getData(request) {
 function isAdminUser() {
   return true;
 }
-
-
