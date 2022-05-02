@@ -6,6 +6,9 @@ The goal of this repository is to write an OData connector, specifically for [OD
 
 For a tutorial concerning use and editing of this connector, see our [guide](https://github.com/UDub-Impact/OData-Connector/blob/master/connector%20guide.md).
 
+For a video walkthrough please checkout this [youtube video](https://www.youtube.com/watch?v=zch0ycCPqRU&ab_channel=SamLevy)
+
+
 # Notes
 - Google Cloud Platform project for our connector is at [here](https://console.cloud.google.com/home/dashboard?project=getodk-gds) (this is an ODK resource.)
 - This connector is deployed on Apps Script, a platform hosted by Google. The deployed script project can be found [here](https://script.google.com/home/projects/1wqcrVE9bDDIpmldgHWpQCtnB9isz_aWxhbSM_udaTgFR02vp2z079B-S)
