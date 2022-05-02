@@ -47,6 +47,14 @@ If you have data in different repeat tables or forms that are related to eachoth
 ![Blend Data Step 7](images/blend_step_7.png)
 8. Click save and create your report! You can continue to edit the blended data options though! 
 
+## Replacing Connection (Use if going from temporary version of connector to published version) 
+1. Create a new connection to your form/table using the connector published on the [GDS connector gallery](https://datastudio.google.com/data?search=ODK)
+2. Do not create a report from this connection, instead, go to your existing report and change the data source. 
+![Replace Connection Step 1](images/replace_1.png)
+![Replace Connection Step 2](images/replace_2.png)
+![Replace Connection Step 3](images/replace_3.png)
+Try refreshing your data if any issues occur. You may have to change some of your fields but let us know if any majors occur! 
+
 ## Edit Connection 
 We strongly advise **against** editing connections because it may corrupt the original connection and add the wrong data types for the new connection.
 If you would like to change the URL or table you are using, we suggest you close your current connector and open a new one (and log out if you intend to connect to an entirely new server).
