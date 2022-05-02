@@ -136,9 +136,6 @@ function setCredentials(request) {
 * @returns {boolean} whether the username + password + path are correct
 */
 function validateAndStoreCredentials(username, password, path) {
-  Logger.log(username);
-  Logger.log(password);
-  Logger.log(path);
   var fullPath = path;
   path = parseURL(path)[0];
   var properties = PropertiesService.getUserProperties();
@@ -262,7 +259,6 @@ function resetAuthTimeout() {
   // PropertiesService is a global variable that keeps the information of
   // the user. In this case we need to remove password
   var userProperties = PropertiesService.getUserProperties();
-  userProperties.deleteProperty('dscc.path');
   userProperties.deleteProperty('dscc.username');
   userProperties.deleteProperty('dscc.token');
 }
