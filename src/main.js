@@ -29,12 +29,25 @@ var AUTH_TIMEOUT = 24 // Auth expires every 24 hours
 *                   be used by the connector
 */
 function getAuthType() {
-  return cc.newAuthTypeResponse()
-  // PATH_USER_PASS indicate we want to use user + password + a URL path
-  // to user's server for authentication
-  .setAuthType(cc.AuthType.PATH_USER_PASS)
-  .setHelpUrl('https://docs.getodk.org/central-submissions/#connecting-to-submission-data-over-odata')
-  .build();
+   // PropertiesService is a global variable that keeps the information of
+  // the user. In this case we need to remove user name and password
+  // from that global variable.
+  var userProperties = PropertiesService.getUserProperties();
+  if (!userProperties.getProperty('dscc.fullPath')) {
+    return cc.newAuthTypeResponse()
+    // PATH_USER_PASS indicate we want to use user + password + a URL path
+    // to user's server for authentication
+    .setAuthType(cc.AuthType.PATH_USER_PASS)
+    .setHelpUrl('https://docs.getodk.org/central-submissions/#connecting-to-submission-data-over-odata')
+    .build();
+  } else {
+    return cc.newAuthTypeResponse()
+    // PATH_USER_PASS indicate we want to use user + password + a URL path
+    // to user's server for authentication
+    .setAuthType(cc.AuthType.USER_PASS)
+    .setHelpUrl('https://docs.getodk.org/central-submissions/#connecting-to-submission-data-over-odata')
+    .build();
+  }
 }
 
 /**
@@ -69,7 +82,7 @@ function isAuthValid() {
   var hours = diff/ 36e5; // number of hours between timestamp and current time 
 
   if (hours > AUTH_TIMEOUT){ // expires creds every AUTH_TIMEOUT hours
-    resetAuth(); 
+    resetAuthTimeout(); 
     return false;
   }
   
@@ -88,8 +101,14 @@ function isAuthValid() {
 * "errorCode": string("NONE" | "INVALID_CREDENTIALS")
 */
 function setCredentials(request) {
-  var isCredentialsValid = validateAndStoreCredentials(request.pathUserPass.username, 
-                                                       request.pathUserPass.password, request.pathUserPass.path);
+  var properties = PropertiesService.getUserProperties();
+  if (request.pathUserPass) {
+    var isCredentialsValid = validateAndStoreCredentials(request.pathUserPass.username, 
+                                                         request.pathUserPass.password, request.pathUserPass.path);
+  } else {
+    var isCredentialsValid = validateAndStoreCredentials(request.userPass.username, 
+                                                         request.userPass.password, properties.getProperty('dscc.fullPath'));
+  }
   
   if (!isCredentialsValid) {
     return {
@@ -139,7 +158,7 @@ function validateAndStoreCredentials(username, password, path) {
     var diff = Math.abs(currTime - Date.parse(timestamp)) // have to parse timestamp because stored as string 
     var hours = diff/ 36e5; // number of hours between timestamp and current time 
     if (hours > AUTH_TIMEOUT){ // expires creds every AUTH_TIMEOUT hours 
-      resetAuth(); 
+      resetAuthTimeout(); 
       return false;
     } else{
       return true;
@@ -231,6 +250,19 @@ function storeCredentials(username, password, path, fullPath, timestamp) {
   .setProperty('dscc.timestamp', timestamp);
 };
 
+
+/**
+* This method clears user credentials on a timeout. We do this so that we can save the username and path but clear the password 
+* which allows us to prompt the user for less different information 
+*/ 
+function resetAuthTimeout() {
+  // PropertiesService is a global variable that keeps the information of
+  // the user. In this case we need to remove password
+  var userProperties = PropertiesService.getUserProperties();
+  userProperties.deleteProperty('dscc.username');
+  userProperties.deleteProperty('dscc.token');
+}
+
 /**
 * This method clears user credentials for the third-party service. 
 * 
@@ -239,8 +271,8 @@ function resetAuth() {
   // PropertiesService is a global variable that keeps the information of
   // the user. In this case we need to remove user name and password
   // from that global variable.
-  var properties = PropertiesService.getUserProperties();
-  properties.deleteAllProperties();
+  var userProperties = PropertiesService.getUserProperties();
+  userProperties.deleteAllProperties();
 }
 
 /**
