@@ -136,9 +136,6 @@ function setCredentials(request) {
 * @returns {boolean} whether the username + password + path are correct
 */
 function validateAndStoreCredentials(username, password, path) {
-  Logger.log(username);
-  Logger.log(password);
-  Logger.log(path);
   var fullPath = path;
   path = parseURL(path)[0];
   var properties = PropertiesService.getUserProperties();
@@ -334,13 +331,16 @@ function getConfig(request) {
   
   config.newInfo()
   .setId('Caching Credentials')
-  .setText('You have set credentials to be cached: ' +  user.getProperty('dscc.areCredentialsCached'));
+  .setText('Currently, your credentials are [' + (user.getProperty('dscc.areCredentialsCached') == 'true' ? 'being cached' : 'not being cached') + ']. If you ' +
+  'would like to change that, use the dropdown select below. If you leave it blank, it will keep your current choice. If you choose to ' +
+  'cache your credentials, then your Central password will be stored on Google servers. ' +
+  'We recommend using a Project Viewer account if you choose this option.');
   
   config
   .newSelectSingle()
   .setId('cache_credentials')
   .setName('Would you like to save your credentials?')
-  .setHelpText('Chose whether to cache your ODK username and password to avoid getting logged out every 24 hours. You can leave this blank if it is set to what you want it to be.')
+  .setHelpText('Choose whether to cache your ODK username and password to avoid getting logged out every 24 hours.')
   .addOption(config.newOptionBuilder().setLabel('yes').setValue(true))
   .addOption(config.newOptionBuilder().setLabel('no').setValue(false));
   
