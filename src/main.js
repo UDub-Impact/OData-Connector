@@ -81,7 +81,7 @@ function isAuthValid() {
   var diff = Math.abs(currTime - Date.parse(timestamp)) // have to parse timestamp because stored as string 
   var hours = diff/ 36e5; // number of hours between timestamp and current time 
 
-  if (hours > AUTH_TIMEOUT){ // expires creds every AUTH_TIMEOUT hours
+  if (hours > AUTH_TIMEOUT && properties.getProperty('dscc.areCredentialsCached') == 'false'){ // expires creds every AUTH_TIMEOUT hours
     resetAuthTimeout(); 
     return false;
   }
@@ -157,7 +157,7 @@ function validateAndStoreCredentials(username, password, path) {
     var currTime = new Date();
     var diff = Math.abs(currTime - Date.parse(timestamp)) // have to parse timestamp because stored as string 
     var hours = diff/ 36e5; // number of hours between timestamp and current time 
-    if (hours > AUTH_TIMEOUT){ // expires creds every AUTH_TIMEOUT hours 
+    if (hours > AUTH_TIMEOUT && properties.getProperty('dscc.areCredentialsCached') == 'false'){ // expires creds every AUTH_TIMEOUT hours 
       resetAuthTimeout(); 
       return false;
     } else{
@@ -259,6 +259,7 @@ function resetAuthTimeout() {
   // PropertiesService is a global variable that keeps the information of
   // the user. In this case we need to remove password
   var userProperties = PropertiesService.getUserProperties();
+  userProperties.deleteProperty('dscc.path');
   userProperties.deleteProperty('dscc.username');
   userProperties.deleteProperty('dscc.token');
 }
@@ -307,7 +308,10 @@ function getConfig(request) {
   var isSecondRequest = configParams !== undefined && configParams.table !== undefined;
   var config = cc.getConfig();
   var user = PropertiesService.getUserProperties(); 
-  var current_form = user.getProperty('dscc.fullPath') != null ? user.getProperty('dscc.fullPath') : "";
+  var current_form = user.getProperty('dscc.fullPath') != null ? user.getProperty('dscc.fullPath') : ""; 
+  if (user.getProperty('dscc.areCredentialsCached') == undefined) {
+    user.setProperty('dscc.areCredentialsCached', 'false');
+  }
   if (isFirstRequest) {
     config.setIsSteppedConfig(true);
   }
@@ -315,6 +319,8 @@ function getConfig(request) {
   if (debug) { 
     Logger.log("isFirstRequest: " + isFirstRequest);
     Logger.log("isSecondRequest: " + isSecondRequest);
+    Logger.log(user.getProperty('dscc.areCredentialsCached'));
+    Logger.log("config params: " + configParams);
   }
   
   config.newCheckbox()
@@ -322,6 +328,21 @@ function getConfig(request) {
   .setName("Reset Auth?")
   .setHelpText("Do you want to reset Auth?")
   .setIsDynamic(true);
+  
+  config.newInfo()
+  .setId('Caching Credentials')
+  .setText('Currently, your credentials are [' + (user.getProperty('dscc.areCredentialsCached') == 'true' ? 'being cached' : 'not being cached') + ']. If you ' +
+  'would like to change that, use the dropdown select below. If you leave it blank, it will keep your current choice. If you choose to ' +
+  'cache your credentials, then your Central password will be stored on Google servers. ' +
+  'We recommend using a Project Viewer account if you choose this option.');
+  
+  config
+  .newSelectSingle()
+  .setId('cache_credentials')
+  .setName('Would you like to save your credentials?')
+  .setHelpText('Choose whether to cache your ODK username and password to avoid getting logged out every 24 hours.')
+  .addOption(config.newOptionBuilder().setLabel('yes').setValue(true))
+  .addOption(config.newOptionBuilder().setLabel('no').setValue(false));
   
   config.newInfo()
   .setId('Request Data')
@@ -342,7 +363,12 @@ function getConfig(request) {
     .setDebugText("You have successfully logged out. Please refresh your page to return to the login page")
     .throwException();
     return;
-  }
+  }  
+  
+  if (configParams !== undefined && configParams.cache_credentials) {
+    // could add a message like "please refresh your page"
+    user.setProperty('dscc.areCredentialsCached', configParams.cache_credentials); 
+  } 
   
   // The dropdown will just have all tables as options. If no repeat tables, will only be the Submissions table. 
   // This ensures that configParams.table is overwritten by the Submissions table when you edit the connection 
